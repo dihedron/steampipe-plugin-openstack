@@ -10,4 +10,4 @@ clean:
 install: plugin
 	@mkdir -p ~/.steampipe/plugins/local/openstack
 	@cp steampipe-plugin-openstack ~/.steampipe/plugins/local/openstack/openstack.plugin
-	@cp openstack.tf ~/.steampipe/config/openstack.spc
+	@cp config/openstack.spc ~/.steampipe/config/openstack.spc

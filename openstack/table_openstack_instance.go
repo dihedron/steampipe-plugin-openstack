@@ -39,9 +39,9 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 func getOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
 	// instanceID := d.KeyColumnQuals["id"].GetStringValue()
 	// plugin.Logger(ctx).Debug("retrieving openstack instance %s", instanceID)
-	plugin.Logger(ctx).Debug("retrieving openstack instance")
-	plugin.Logger(ctx).Debug("plugin query data: %s", ToPrettyJSON(d))
-	plugin.Logger(ctx).Debug("plugin hydrate data %s", ToPrettyJSON(h))
+	plugin.Logger(ctx).Warn("retrieving openstack instance")
+	plugin.Logger(ctx).Warn("plugin query data: ", ToPrettyJSON(d))
+	plugin.Logger(ctx).Warn("plugin hydrate data: ", ToPrettyJSON(h))
 
 	// // create service
 	// svc, err := EC2Client(ctx, d)

@@ -20,6 +20,10 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 			// "openstack_securitygroup":     tableOpenStackSecurityGroup(ctx),
 			// "openstack_securitygrouprule": tableOpenStackSecurityGroupRule(ctx),
 		},
+		ConnectionConfigSchema: &plugin.ConnectionConfigSchema{
+			NewInstance: ConfigInstance,
+			Schema:      ConfigSchema,
+		},
 	}
 	return p
 }
