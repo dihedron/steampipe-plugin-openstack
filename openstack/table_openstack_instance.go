@@ -68,4 +68,4 @@ func getOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	return nil, ErrNotImplemented
 }
 
-var ErrNotImplemented = errors.New("Not implemented")
+var ErrNotImplemented = errors.New("not implemented")
