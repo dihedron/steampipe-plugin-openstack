@@ -29,8 +29,9 @@ This plugin is still in the very early stages.
     - [ ] Filter by availability zone
     - [ ] More filter criteria
 - [ ] Create connection to Identity APIs
-- [ ] Implement "get project" (by ID)
-    - [ ] Fill all fields from VM instance
-- [ ] Implement "list projects"
-- [ ] Check that joins between instance and project (by ID) work
+- [X] Implement "get project" (by ID)
+    - [X] Fill all fields from project
+- [X] Implement "list projects"
+    - [ ] Add filter criteria
+- [X] Check that joins between instance and project (by ID) work
 - [ ] ...

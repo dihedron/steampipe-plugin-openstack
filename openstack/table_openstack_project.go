@@ -25,22 +25,54 @@ func tableOpenStackProject(_ context.Context) *plugin.Table {
 			Hydrate: getOpenStackProject,
 		},
 		Columns: []*plugin.Column{
-			{Name: "id", Type: proto.ColumnType_STRING, Description: "The project (or tenant) id"},
-			{Name: "name", Type: proto.ColumnType_STRING, Description: "The name of the project (or tenant)"},
-			// {Name: "project_id", Type: proto.ColumnType_STRING, Description: "The ID of the instance's project (aka tenant)"},
-			// {Name: "user_id", Type: proto.ColumnType_STRING, Description: "The ID of the instance's user"},
-			// {Name: "created_at", Type: proto.ColumnType_STRING, Description: "The creation time of the instance"},
-			// {Name: "launched_at", Type: proto.ColumnType_STRING, Description: "The launch time of the instance"},
-			// {Name: "updated_at", Type: proto.ColumnType_STRING, Description: "The update time of the instance"},
-			// {Name: "terminated_at", Type: proto.ColumnType_STRING, Description: "The termintaion time of the instance"},
-			// {Name: "host_id", Type: proto.ColumnType_STRING, Description: "The ID of the hypervisor (host) the instance is running on"},
-			// {Name: "status", Type: proto.ColumnType_STRING, Description: "The status of the instance"},
-			// {Name: "progress", Type: proto.ColumnType_INT, Description: "Progress information about the instance"},
-			// AccessIPv4   string                 `json:"accessIPv4"`
-			// AccessIPv6   string                 `json:"accessIPv6"`
-
+			{
+				Name:        "id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The unique id of project (or tenant).",
+			},
+			{
+				Name:        "name",
+				Type:        proto.ColumnType_STRING,
+				Description: "The name of the project (or tenant).",
+			},
+			{
+				Name:        "description",
+				Type:        proto.ColumnType_STRING,
+				Description: "The description of the project (or tenant)",
+			},
+			{
+				Name:        "is_domain",
+				Type:        proto.ColumnType_BOOL,
+				Description: "Indicates whether the project is a domain.",
+			},
+			{
+				Name:        "domain_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The ID of the domain the project belongs to.",
+			},
+			{
+				Name:        "enabled",
+				Type:        proto.ColumnType_BOOL,
+				Description: "Indicates whether or not the project is enabled.",
+			},
+			{
+				Name:        "parent_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The ID of the parent project.",
+			},
 		},
 	}
+}
+
+// openstackProject is the struct representing as a result of the list and hydrate functions.
+type openstackProject struct {
+	ID          string
+	Name        string
+	Description string
+	IsDomain    bool
+	DomainID    string
+	Enabled     bool
+	ParentID    string
 }
 
 //// LIST FUNCTION
@@ -49,7 +81,31 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	plugin.Logger(ctx).Debug("retrieving openstack projects list")
 	plugin.Logger(ctx).Debug("plugin query data: %s", toPrettyJSON(d))
 	plugin.Logger(ctx).Debug("plugin hydrate data %s", toPrettyJSON(h))
-	return nil, ErrNotImplemented
+
+	client, err := getIdentityV3Client(ctx, d)
+	if err != nil {
+		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		return nil, err
+	}
+
+	opts := buildOpenStackProjectFilter(ctx, d.KeyColumnQuals)
+
+	allPages, err := projects.List(client, opts).AllPages()
+	if err != nil {
+		plugin.Logger(ctx).Error("error listing projects with options", "options", toPrettyJSON(opts), "error", err)
+		return nil, err
+	}
+	allProjects, err := projects.ExtractProjects(allPages)
+	if err != nil {
+		plugin.Logger(ctx).Error("error extracting projects", "error", err)
+		return nil, err
+	}
+	plugin.Logger(ctx).Debug("projects retrieved", "count", len(allProjects))
+
+	for _, project := range allProjects {
+		d.StreamListItem(ctx, buildOpenStackProject(&project))
+	}
+	return nil, nil
 }
 
 //// HYDRATE FUNCTIONS
@@ -73,22 +129,25 @@ func getOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 		return nil, err
 	}
 
-	return &openstackProject{
-		ID:   id,
-		Name: project.Name,
-	}, nil
+	return buildOpenStackProject(project), nil
 }
 
-type openstackProject struct {
-	ID   string
-	Name string
-	// ProjectID    string
-	// UserID       string
-	// CreatedAt    string
-	// LaunchedAt   string
-	// UpdatedAt    string
-	// TerminatedAt string
-	// HostID       string
-	// Status       string
-	// Progress     int
+func buildOpenStackProject(project *projects.Project) *openstackProject {
+	return &openstackProject{
+		ID:          project.ID,
+		Name:        project.Name,
+		Description: project.Description,
+		IsDomain:    project.IsDomain,
+		DomainID:    project.DomainID,
+		Enabled:     project.Enabled,
+		ParentID:    project.ParentID,
+	}
+}
+
+func buildOpenStackProjectFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) projects.ListOpts {
+	opts := projects.ListOpts{}
+	for k, v := range quals {
+		plugin.Logger(ctx).Debug("filter", "key", k, "value", v)
+	}
+	return opts
 }
