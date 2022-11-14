@@ -1,12 +1,31 @@
 # steampipe-plugin-openstack
 
-A Steampipe plugin to query OpenStack data.
+A Steampipe plugin to query OpenStack data as you would a relational database.
+
+At the moment you can run queries such as:
 
 ```sql
-select * from openstack_instance where id = 'foo';
+select 
+    port.id, 
+    port.device_id, 
+    port.device_owner, 
+    proj.id, 
+    proj.name, 
+    vm.id, 
+    vm.name 
+from 
+    openstack_port port 
+join 
+    openstack_project proj 
+on 
+    proj.id = port.project_id 
+left outer join 
+    openstack_instance vm 
+on 
+    port.device_id = vm.id;
 ```
 
-Run as:
+Runninga query is as simple as:
 
 ```bash
 $> steampipe query "select * from openstack_instance where id = 'foo';"
@@ -20,6 +39,7 @@ This plugin is still in the very early stages.
 
 - [x] Skeleton
 - [x] Configuration schema
+    - [X] Make OpenStack API micro-versions configurable
 - [X] Create connection to OpenStack APIs
 - [X] Create connection to Compute APIs
 - [X] Implement "get VM instance" (by ID)
@@ -37,6 +57,13 @@ This plugin is still in the very early stages.
 - [X] Implement "list projects"
     - [X] Add filter criteria
     - [ ] Filter by tags
+
+- [X] Create connection to Network APIs
+- [X] Implement "get port" (by ID)
+    - [X] Fill all fields from port
+- [X] Implement "list ports"
+    - [X] Add filter criteria
+    - [ ] Filter by tags    
 - [X] Check that joins between instance and project (by ID) work
 - [ ] Understand how to expunge embedded entities from instance (e.g . []SecurityGroups)
 - [ ] ...

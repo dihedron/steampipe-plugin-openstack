@@ -18,7 +18,7 @@ func tableOpenStackProject(_ context.Context) *plugin.Table {
 			{
 				Name:        "id",
 				Type:        proto.ColumnType_STRING,
-				Description: "The unique id of project (or tenant).",
+				Description: "The unique id of the project (or tenant).",
 			},
 			{
 				Name:        "name",
@@ -84,7 +84,7 @@ func tableOpenStackProject(_ context.Context) *plugin.Table {
 	}
 }
 
-// openstackProject is the struct representing as a result of the list and hydrate functions.
+// openstackProject is the struct representing the result of the list and hydrate functions.
 type openstackProject struct {
 	ID          string
 	Name        string
@@ -103,7 +103,7 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 
 	plugin.Logger(ctx).Debug("retrieving openstack projects list", "query data", toPrettyJSON(d))
 
-	client, err := getIdentityV3Client(ctx, d)
+	client, err := getServiceClient(ctx, d, "openstack_identity_v3")
 	if err != nil {
 		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
 		return nil, err
@@ -138,7 +138,7 @@ func getOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 	id := d.KeyColumnQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack project", "id", id)
 
-	client, err := getIdentityV3Client(ctx, d)
+	client, err := getServiceClient(ctx, d, "openstack_identity_v3")
 	if err != nil {
 		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
 		return nil, err

@@ -220,7 +220,7 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 
 	plugin.Logger(ctx).Debug("retrieving openstack instance list", "query data", toPrettyJSON(d))
 
-	client, err := getComputeV2Client(ctx, d)
+	client, err := getServiceClient(ctx, d, "openstack_compute_v2")
 	if err != nil {
 		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
 		return nil, err
@@ -256,7 +256,7 @@ func getOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	id := d.KeyColumnQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack instance", "id", id)
 
-	client, err := getComputeV2Client(ctx, d)
+	client, err := getServiceClient(ctx, d, "openstack_compute_v2")
 	if err != nil {
 		plugin.Logger(ctx).Error("error creating compute v2 client", "error", err)
 		return nil, err

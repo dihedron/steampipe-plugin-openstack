@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -12,63 +13,65 @@ import (
 )
 
 const (
-	COMPUTEv2_MICROVERSION  = "2.79"
-	IDENTITYv3_MICROVERSION = "3.13"
+	DefaultComputeV2Microversion  = "2.79"
+	DefaultIdentityV3Microversion = "3.13"
 )
 
 var ErrNotImplemented = errors.New("not implemented")
 
-// getComputeV2Client creates the Compute v2 (Nova) API client.
-func getComputeV2Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.ServiceClient, error) {
-	// load connection from cache, which preserves throttling protection etc
-	cacheKey := "openstack_computev2"
-	if cachedData, ok := d.ConnectionManager.Cache.Get(cacheKey); ok {
-		plugin.Logger(ctx).Debug("returning compute v2 client from cache")
-		return cachedData.(*gophercloud.ServiceClient), nil
-	}
-
-	plugin.Logger(ctx).Info("creating new compute v2 client")
-	api, err := getAuthenticatedClient(ctx, d)
-	if err != nil {
-		plugin.Logger(ctx).Error("no valid authenticated client available", "error", err)
-		return nil, err
-	}
-
-	openstackConfig := GetConfig(d.Connection)
-	region := ""
-	if openstackConfig.Region != nil {
-		region = *openstackConfig.Region
-	}
-
-	client, err := openstack.NewComputeV2(api, gophercloud.EndpointOpts{Region: region})
-
-	if err != nil {
-		plugin.Logger(ctx).Error("error creating compute v2 client", "error", err)
-		return nil, err
-	}
-	// see https://docs.openstack.org/nova/latest/reference/api-microversion-history.html
-	client.Microversion = COMPUTEv2_MICROVERSION
-
-	// save to cache
-	plugin.Logger(ctx).Debug("saving compute v2 client to cache")
-	d.ConnectionManager.Cache.Set(cacheKey, client)
-
-	return client, nil
+type serviceClientConfig struct {
+	newClient       func(client *gophercloud.ProviderClient, eo gophercloud.EndpointOpts) (*gophercloud.ServiceClient, error)
+	getMicroversion func(config *openstackConfig) string
 }
 
-// getIdentityV3Client creates the Identity v3 (Keystone) API client.
-func getIdentityV3Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.ServiceClient, error) {
+var serviceClientConfigs = map[string]serviceClientConfig{
+	"openstack_identity_v3": {
+		newClient: openstack.NewIdentityV3,
+		getMicroversion: func(config *openstackConfig) string {
+			microversion := DefaultIdentityV3Microversion
+			if config.IdentityV3Microversion != nil {
+				microversion = *config.IdentityV3Microversion
+			}
+			return microversion
+		},
+	},
+	"openstack_compute_v2": {
+		newClient: openstack.NewComputeV2,
+		getMicroversion: func(config *openstackConfig) string {
+			microversion := DefaultComputeV2Microversion
+			if config.ComputeV2Microversion != nil {
+				microversion = *config.ComputeV2Microversion
+			}
+			return microversion
+		},
+	},
+	"openstack_network_v2": {
+		newClient: openstack.NewNetworkV2,
+		getMicroversion: func(config *openstackConfig) string {
+			// no microversion support for networking
+			return ""
+		},
+	},
+}
+
+func getServiceClient(ctx context.Context, d *plugin.QueryData, key string) (*gophercloud.ServiceClient, error) {
+	plugin.Logger(ctx).Debug("returning service client", "type", key)
+
 	// load connection from cache, which preserves throttling protection etc
-	cacheKey := "openstack_identityv2"
-	if cachedData, ok := d.ConnectionManager.Cache.Get(cacheKey); ok {
-		plugin.Logger(ctx).Debug("returning identity v3 client from cache")
+	if cachedData, ok := d.ConnectionManager.Cache.Get(key); ok {
+		plugin.Logger(ctx).Debug("returning service client from cache")
 		return cachedData.(*gophercloud.ServiceClient), nil
 	}
 
-	plugin.Logger(ctx).Info("creating new identity v3 client")
+	if _, ok := serviceClientConfigs[key]; !ok {
+		plugin.Logger(ctx).Error("invalid service client type", "type", key)
+		panic(fmt.Sprintf("invalid service type: %q", key))
+	}
+
+	plugin.Logger(ctx).Info("creating new service client", "type", key)
 	api, err := getAuthenticatedClient(ctx, d)
 	if err != nil {
-		plugin.Logger(ctx).Error("no valid authenticated client available", "error", err)
+		plugin.Logger(ctx).Error("no valid authenticated provider client available", "error", err)
 		return nil, err
 	}
 
@@ -78,18 +81,17 @@ func getIdentityV3Client(ctx context.Context, d *plugin.QueryData) (*gophercloud
 		region = *openstackConfig.Region
 	}
 
-	client, err := openstack.NewIdentityV3(api, gophercloud.EndpointOpts{Region: region})
+	client, err := serviceClientConfigs[key].newClient(api, gophercloud.EndpointOpts{Region: region})
 
 	if err != nil {
-		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		plugin.Logger(ctx).Error("error creating service client", "type", key, "error", err)
 		return nil, err
 	}
-	// see https://docs.openstack.org/nova/latest/reference/api-microversion-history.html
-	client.Microversion = IDENTITYv3_MICROVERSION
+	client.Microversion = serviceClientConfigs[key].getMicroversion(&openstackConfig)
 
 	// save to cache
-	plugin.Logger(ctx).Debug("saving compute v2 client to cache")
-	d.ConnectionManager.Cache.Set(cacheKey, client)
+	plugin.Logger(ctx).Debug("saving service client to cache", "type", key)
+	d.ConnectionManager.Cache.Set(key, client)
 
 	return client, nil
 }
