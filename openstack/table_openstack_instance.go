@@ -2,7 +2,6 @@ package openstack
 
 import (
 	"context"
-	"errors"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
@@ -48,8 +47,8 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 
 func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
 	plugin.Logger(ctx).Debug("retrieving openstack instance list")
-	plugin.Logger(ctx).Debug("plugin query data: %s", ToPrettyJSON(d))
-	plugin.Logger(ctx).Debug("plugin hydrate data %s", ToPrettyJSON(h))
+	plugin.Logger(ctx).Debug("plugin query data: %s", toPrettyJSON(d))
+	plugin.Logger(ctx).Debug("plugin hydrate data %s", toPrettyJSON(h))
 	return nil, ErrNotImplemented
 }
 
@@ -171,5 +170,3 @@ type openstackInstance struct {
 	Status       string
 	Progress     int
 }
-
-var ErrNotImplemented = errors.New("not implemented")

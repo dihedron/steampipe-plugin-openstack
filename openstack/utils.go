@@ -3,20 +3,22 @@ package openstack
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 )
 
-// ToPrettyJSON dumps the input object to JSON.
-func ToPrettyJSON(v any) string {
-	s, _ := json.MarshalIndent(v, "", "  ")
-	return string(s)
-}
+const (
+	COMPUTEv2_MICROVERSION  = "2.79"
+	IDENTITYv3_MICROVERSION = "3.13"
+)
+
+var ErrNotImplemented = errors.New("not implemented")
 
 func getComputeV2Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.ServiceClient, error) {
-	// Load connection from cache, which preserves throttling protection etc
+	// load connection from cache, which preserves throttling protection etc
 	cacheKey := "openstack_computev2"
 	if cachedData, ok := d.ConnectionManager.Cache.Get(cacheKey); ok {
 		plugin.Logger(ctx).Debug("returning compute v2 client from cache")
@@ -43,7 +45,44 @@ func getComputeV2Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.
 		return nil, err
 	}
 	// see https://docs.openstack.org/nova/latest/reference/api-microversion-history.html
-	client.Microversion = "2.79"
+	client.Microversion = COMPUTEv2_MICROVERSION
+
+	// save to cache
+	plugin.Logger(ctx).Debug("saving compute v2 client to cache")
+	d.ConnectionManager.Cache.Set(cacheKey, client)
+
+	return client, nil
+}
+
+func getIdentityV3Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.ServiceClient, error) {
+	// load connection from cache, which preserves throttling protection etc
+	cacheKey := "openstack_identityv2"
+	if cachedData, ok := d.ConnectionManager.Cache.Get(cacheKey); ok {
+		plugin.Logger(ctx).Debug("returning identity v3 client from cache")
+		return cachedData.(*gophercloud.ServiceClient), nil
+	}
+
+	plugin.Logger(ctx).Info("creating new identity v3 client")
+	api, err := getAuthenticatedClient(ctx, d)
+	if err != nil {
+		plugin.Logger(ctx).Error("no valid authenticated client available", "error", err)
+		return nil, err
+	}
+
+	openstackConfig := GetConfig(d.Connection)
+	region := ""
+	if openstackConfig.Region != nil {
+		region = *openstackConfig.Region
+	}
+
+	client, err := openstack.NewIdentityV3(api, gophercloud.EndpointOpts{Region: region})
+
+	if err != nil {
+		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		return nil, err
+	}
+	// see https://docs.openstack.org/nova/latest/reference/api-microversion-history.html
+	client.Microversion = IDENTITYv3_MICROVERSION
 
 	// save to cache
 	plugin.Logger(ctx).Debug("saving compute v2 client to cache")
@@ -121,4 +160,10 @@ func getAuthenticatedClient(ctx context.Context, d *plugin.QueryData) (*gophercl
 	d.ConnectionManager.Cache.Set(cacheKey, client)
 
 	return client, nil
+}
+
+// ToPrettyJSON dumps the input object to JSON.
+func toPrettyJSON(v any) string {
+	s, _ := json.MarshalIndent(v, "", "  ")
+	return string(s)
 }
