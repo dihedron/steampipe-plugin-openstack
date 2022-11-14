@@ -7,6 +7,7 @@ connection "openstack" {
     userid = "<userid>"
     username = "<username>"
     password = "<password>"
+    region = "<region>"
     project_id = "<project id>"
     project_name = "<project name>"
     domain_id = "<domain id>"

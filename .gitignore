@@ -15,3 +15,6 @@
 # vendor/
 
 steampipe-plugin-openstack
+
+# Local integration test file 
+config/*.tf

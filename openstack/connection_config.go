@@ -10,13 +10,16 @@ type openstackConfig struct {
 	UserID              *string `cty:"userid"`
 	Username            *string `cty:"username"`
 	Password            *string `cty:"password"`
+	Region              *string `cty:"region"`
 	ProjectID           *string `cty:"project_id"`
 	ProjectName         *string `cty:"project_name"`
 	DomainID            *string `cty:"domain_id"`
 	DomainName          *string `cty:"domain_name"`
 	AccessToken         *string `cty:"access_token"`
-	AppCredentialID     *string `cty:"app_credential_key"`
+	AppCredentialID     *string `cty:"app_credential_id"`
+	AppCredentialName   *string `cty:"app_credential_name"`
 	AppCredentialSecret *string `cty:"app_credential_secret"`
+	AllowReauth         *bool   `cty:"allow_reauth"`
 }
 
 var ConfigSchema = map[string]*schema.Attribute{
@@ -30,6 +33,9 @@ var ConfigSchema = map[string]*schema.Attribute{
 		Type: schema.TypeString,
 	},
 	"password": {
+		Type: schema.TypeString,
+	},
+	"region": {
 		Type: schema.TypeString,
 	},
 	"project_id": {
@@ -47,11 +53,17 @@ var ConfigSchema = map[string]*schema.Attribute{
 	"access_token": {
 		Type: schema.TypeString,
 	},
-	"app_credential_key": {
+	"app_credential_id": {
+		Type: schema.TypeString,
+	},
+	"app_credential_name": {
 		Type: schema.TypeString,
 	},
 	"app_credential_secret": {
 		Type: schema.TypeString,
+	},
+	"allow_reauth": {
+		Type: schema.TypeBool,
 	},
 }
 

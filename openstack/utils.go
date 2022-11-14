@@ -15,38 +15,110 @@ func ToPrettyJSON(v any) string {
 	return string(s)
 }
 
-// Create Rest API (v3) client
-func connect(ctx context.Context, d *plugin.QueryData) *gophercloud.ProviderClient {
-
+func getComputeV2Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.ServiceClient, error) {
 	// Load connection from cache, which preserves throttling protection etc
-	cacheKey := "openstack"
+	cacheKey := "openstack_computev2"
 	if cachedData, ok := d.ConnectionManager.Cache.Get(cacheKey); ok {
-		return cachedData.(*gophercloud.ProviderClient)
+		plugin.Logger(ctx).Debug("returning compute v2 client from cache")
+		return cachedData.(*gophercloud.ServiceClient), nil
 	}
 
-	// TODO: do the real connection logic here
-	// Get connection config for plugin
-	// openstackConfig := GetConfig(d.Connection)
-	// if openstackConfig.Token != nil {
-	// 	token = *openstackConfig.Token
-	// }
-	// if openstackConfig.BaseURL != nil {
-	// 	baseURL = *openstackConfig.BaseURL
-	// }
-	// token := os.Getenv("OPENSTACK_PROJECT")
-	// baseURL := os.Getenv("OPENSTACK_ENDPOINT_URL")
+	plugin.Logger(ctx).Info("creating new compute v2 client")
+	api, err := getAuthenticatedClient(ctx, d)
+	if err != nil {
+		plugin.Logger(ctx).Error("no valid authenticated client available", "error", err)
+		return nil, err
+	}
+
+	openstackConfig := GetConfig(d.Connection)
+	region := ""
+	if openstackConfig.Region != nil {
+		region = *openstackConfig.Region
+	}
+
+	client, err := openstack.NewComputeV2(api, gophercloud.EndpointOpts{Region: region})
+
+	if err != nil {
+		plugin.Logger(ctx).Error("error creating compute v2 client", "error", err)
+		return nil, err
+	}
+	// see https://docs.openstack.org/nova/latest/reference/api-microversion-history.html
+	client.Microversion = "2.79"
+
+	// save to cache
+	plugin.Logger(ctx).Debug("saving compute v2 client to cache")
+	d.ConnectionManager.Cache.Set(cacheKey, client)
+
+	return client, nil
+}
+
+// Create the OpenStack REST API client.
+func getAuthenticatedClient(ctx context.Context, d *plugin.QueryData) (*gophercloud.ProviderClient, error) {
+
+	// load connection from cache, which preserves throttling protection etc
+	cacheKey := "openstack_authenticated_client"
+	if cachedData, ok := d.ConnectionManager.Cache.Get(cacheKey); ok {
+		plugin.Logger(ctx).Debug("returning the authenticated client from cache")
+		return cachedData.(*gophercloud.ProviderClient), nil
+	}
+
+	plugin.Logger(ctx).Info("creating new authenticated client")
+
+	// try with the environment first
 	auth, err := openstack.AuthOptionsFromEnv()
 	if err != nil {
-		panic("no authing available in environment")
+		plugin.Logger(ctx).Info("no auth info available in environment, filling with defaults", "error", err)
+
+		// fill the auth info from the configuration
+		auth.AllowReauth = true
+		openstackConfig := GetConfig(d.Connection)
+		if openstackConfig.EndpointUrl != nil {
+			auth.IdentityEndpoint = *openstackConfig.EndpointUrl
+		}
+		if openstackConfig.UserID != nil {
+			auth.UserID = *openstackConfig.UserID
+		}
+		if openstackConfig.Username != nil {
+			auth.Username = *openstackConfig.Username
+		}
+		if openstackConfig.Password != nil {
+			auth.Password = *openstackConfig.Password
+		}
+		if openstackConfig.ProjectID != nil {
+			auth.TenantID = *openstackConfig.ProjectID
+		}
+		if openstackConfig.ProjectName != nil {
+			auth.TenantName = *openstackConfig.ProjectName
+		}
+		if openstackConfig.DomainID != nil {
+			auth.DomainID = *openstackConfig.DomainID
+		}
+		if openstackConfig.DomainName != nil {
+			auth.DomainName = *openstackConfig.DomainName
+		}
+		if openstackConfig.AccessToken != nil {
+			auth.TokenID = *openstackConfig.AccessToken
+		}
+		if openstackConfig.AppCredentialID != nil {
+			auth.ApplicationCredentialID = *openstackConfig.AppCredentialID
+		}
+		if openstackConfig.AppCredentialSecret != nil {
+			auth.IdentityEndpoint = *openstackConfig.AppCredentialSecret
+		}
+		if openstackConfig.AllowReauth != nil {
+			auth.AllowReauth = *openstackConfig.AllowReauth
+		}
 	}
 
-	provider, err := openstack.AuthenticatedClient(auth)
+	client, err := openstack.AuthenticatedClient(auth)
 	if err != nil {
-		panic("error creating authenticated client")
+		plugin.Logger(ctx).Error("error creating authenticated client", "error", err)
+		return nil, err
 	}
 
 	// save to cache
-	d.ConnectionManager.Cache.Set(cacheKey, provider)
+	plugin.Logger(ctx).Debug("saving authenticated client to cache")
+	d.ConnectionManager.Cache.Set(cacheKey, client)
 
-	return provider
+	return client, nil
 }
