@@ -18,6 +18,7 @@ const (
 
 var ErrNotImplemented = errors.New("not implemented")
 
+// getComputeV2Client creates the Compute v2 (Nova) API client.
 func getComputeV2Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.ServiceClient, error) {
 	// load connection from cache, which preserves throttling protection etc
 	cacheKey := "openstack_computev2"
@@ -55,6 +56,7 @@ func getComputeV2Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.
 	return client, nil
 }
 
+// getIdentityV3Client creates the Identity v3 (Keystone) API client.
 func getIdentityV3Client(ctx context.Context, d *plugin.QueryData) (*gophercloud.ServiceClient, error) {
 	// load connection from cache, which preserves throttling protection etc
 	cacheKey := "openstack_identityv2"
@@ -163,6 +165,8 @@ func getAuthenticatedClient(ctx context.Context, d *plugin.QueryData) (*gophercl
 	return client, nil
 }
 
+// setLogLevel changes the current HCLog level; this seems necessary as the
+// STEAMPIPE_LOG_LEVEL variable does not seem to be properly read by the plugins.
 func setLogLevel(ctx context.Context, d *plugin.QueryData) {
 	openstackConfig := GetConfig(d.Connection)
 	if openstackConfig.TraceLevel != nil {
@@ -171,12 +175,13 @@ func setLogLevel(ctx context.Context, d *plugin.QueryData) {
 	}
 }
 
-// ToPrettyJSON dumps the input object to JSON.
+// toPrettyJSON dumps the input object to JSON.
 func toPrettyJSON(v any) string {
 	s, _ := json.MarshalIndent(v, "", "  ")
 	return string(s)
 }
 
+// pointerTo returns a pointer to a given value.
 func pointerTo[T any](value T) *T {
 	return &value
 }

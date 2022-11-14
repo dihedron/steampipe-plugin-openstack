@@ -27,15 +27,16 @@ This plugin is still in the very early stages.
         - [X] Original flavor
         - [ ] More fields
 - [X] Implement "list VM instances"
-    - [ ] Filter by project ID
-    - [ ] Filter by project name
-    - [ ] Filter by hypervisor
-    - [ ] Filter by availability zone
-    - [ ] More filter criteria
+    - [X] Filter by project ID
+    - [X] Filter by hypervisor
+    - [X] Filter by availability zone
+    - [ ] Filter by tags
 - [X] Create connection to Identity APIs
 - [X] Implement "get project" (by ID)
     - [X] Fill all fields from project
 - [X] Implement "list projects"
     - [X] Add filter criteria
+    - [ ] Filter by tags
 - [X] Check that joins between instance and project (by ID) work
+- [ ] Understand how to expunge embedded entities from instance (e.g . []SecurityGroups)
 - [ ] ...

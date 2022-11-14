@@ -15,16 +15,6 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "openstack_instance",
 		Description: "OpenStack Virtual Machine Instance",
-		List: &plugin.ListConfig{
-			Hydrate: listOpenStackInstance,
-		},
-		Get: &plugin.GetConfig{
-			KeyColumns: plugin.SingleColumn("id"),
-			// IgnoreConfig: &plugin.IgnoreConfig{
-			// 	ShouldIgnoreErrorFunc: shouldIgnoreErrors([]string{"InvalidInstanceID.NotFound", "InvalidInstanceID.Unavailable", "InvalidInstanceID.Malformed"}),
-			// },
-			Hydrate: getOpenStackInstance,
-		},
 		Columns: []*plugin.Column{
 			{
 				Name:        "id",
@@ -68,6 +58,11 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 			},
 			{
 				Name:        "host_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The ID of the hypervisor (host) the instance is running on",
+			},
+			{
+				Name:        "availability_zone",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the hypervisor (host) the instance is running on",
 			},
@@ -137,6 +132,56 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Description: "The action to take when the Nova watchdog detects the instance is not responding.",
 			},
 		},
+		List: &plugin.ListConfig{
+			Hydrate: listOpenStackInstance,
+			KeyColumns: plugin.KeyColumnSlice{
+				&plugin.KeyColumn{
+					Name:    "name",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "host_id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "status",
+					Require: plugin.Optional,
+				},
+				// &plugin.KeyColumn{
+				// 	Name: "image_name",
+				// 	Require: plugin.Optional,
+				// },
+				&plugin.KeyColumn{
+					Name:    "flavor_name",
+					Require: plugin.Optional,
+				},
+				// &plugin.KeyColumn{
+				// 	Name: "ipv4",
+				// 	Require: plugin.Optional,
+				// },
+				// &plugin.KeyColumn{
+				// 	Name: "ipv6",
+				// 	Require: plugin.Optional,
+				// },
+				&plugin.KeyColumn{
+					Name:    "project_id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "user_id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "availability_zone",
+					Require: plugin.Optional,
+				},
+				// TODO: add tags
+			},
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getOpenStackInstance,
+		},
 	}
 }
 
@@ -150,6 +195,7 @@ type openstackInstance struct {
 	UpdatedAt            string
 	TerminatedAt         string
 	HostID               string
+	AvailabilityZone     string
 	Status               string
 	Progress             int
 	FlavorName           string
@@ -163,6 +209,7 @@ type openstackInstance struct {
 	FlavorEphemeral      int
 	FlavorRngAllowed     bool
 	FlavorWatchdogAction string
+	// ...
 }
 
 //// LIST FUNCTION
@@ -254,6 +301,7 @@ func buildOpenStackInstance(ctx context.Context, instance *apiInstance) *opensta
 		UpdatedAt:            instance.UpdatedAt.String(),
 		TerminatedAt:         instance.TerminatedAt.String(),
 		HostID:               instance.HostID,
+		AvailabilityZone:     instance.AvailabilityZone,
 		Status:               instance.Status,
 		Progress:             instance.Progress,
 		FlavorName:           instance.Flavor.OriginalName,
@@ -276,9 +324,38 @@ func buildOpenStackInstanceFilter(ctx context.Context, quals plugin.KeyColumnEqu
 	opts := servers.ListOpts{
 		AllTenants: true,
 	}
-	for k, v := range quals {
-		plugin.Logger(ctx).Debug("filter", "key", k, "value", v)
+
+	if value, ok := quals["name"]; ok {
+		opts.Name = value.GetStringValue()
 	}
+	if value, ok := quals["host_id"]; ok {
+		opts.Host = value.GetStringValue()
+	}
+	if value, ok := quals["status"]; ok {
+		opts.Status = value.GetStringValue()
+	}
+	// if value, ok := quals["ipv4_address"]; ok {
+	// 	opts.IP = value.GetStringValue()
+	// }
+	// if value, ok := quals["ipv6_address"]; ok {
+	// 	opts.IP6 = value.GetStringValue()
+	// }
+	if value, ok := quals["flavor_name"]; ok {
+		opts.Flavor = value.GetStringValue()
+	}
+	// if value, ok := quals["image_name"]; ok {
+	// 	opts.Image = value.GetStringValue()
+	// }
+	if value, ok := quals["project_id"]; ok {
+		opts.TenantID = value.GetStringValue()
+	}
+	if value, ok := quals["user_id"]; ok {
+		opts.UserID = value.GetStringValue()
+	}
+	if value, ok := quals["availability_zone"]; ok {
+		opts.AvailabilityZone = value.GetStringValue()
+	}
+	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
 	return opts
 }
 
