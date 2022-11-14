@@ -2,6 +2,7 @@ package openstack
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
@@ -25,36 +26,162 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 			Hydrate: getOpenStackInstance,
 		},
 		Columns: []*plugin.Column{
-			{Name: "id", Type: proto.ColumnType_STRING, Description: "The instance id"},
-			{Name: "name", Type: proto.ColumnType_STRING, Description: "The name of the instance"},
-			{Name: "project_id", Type: proto.ColumnType_STRING, Description: "The ID of the instance's project (aka tenant)"},
-			{Name: "user_id", Type: proto.ColumnType_STRING, Description: "The ID of the instance's user"},
-			{Name: "created_at", Type: proto.ColumnType_STRING, Description: "The creation time of the instance"},
-			{Name: "launched_at", Type: proto.ColumnType_STRING, Description: "The launch time of the instance"},
-			{Name: "updated_at", Type: proto.ColumnType_STRING, Description: "The update time of the instance"},
-			{Name: "terminated_at", Type: proto.ColumnType_STRING, Description: "The termintaion time of the instance"},
-			{Name: "host_id", Type: proto.ColumnType_STRING, Description: "The ID of the hypervisor (host) the instance is running on"},
-			{Name: "status", Type: proto.ColumnType_STRING, Description: "The status of the instance"},
-			{Name: "progress", Type: proto.ColumnType_INT, Description: "Progress information about the instance"},
-			// AccessIPv4   string                 `json:"accessIPv4"`
-			// AccessIPv6   string                 `json:"accessIPv6"`
-
+			{
+				Name:        "id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The instance id",
+			},
+			{
+				Name:        "name",
+				Type:        proto.ColumnType_STRING,
+				Description: "The name of the instance",
+			},
+			{
+				Name:        "project_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The ID of the instance's project (aka tenant)",
+			},
+			{
+				Name:        "user_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The ID of the instance's user",
+			},
+			{
+				Name:        "created_at",
+				Type:        proto.ColumnType_STRING,
+				Description: "The creation time of the instance",
+			},
+			{
+				Name:        "launched_at",
+				Type:        proto.ColumnType_STRING,
+				Description: "The launch time of the instance",
+			},
+			{
+				Name:        "updated_at",
+				Type:        proto.ColumnType_STRING,
+				Description: "The update time of the instance",
+			},
+			{
+				Name:        "terminated_at",
+				Type:        proto.ColumnType_STRING,
+				Description: "The termintaion time of the instance",
+			},
+			{
+				Name:        "host_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The ID of the hypervisor (host) the instance is running on",
+			},
+			{
+				Name:        "status",
+				Type:        proto.ColumnType_STRING,
+				Description: "The status of the instance",
+			},
+			{
+				Name:        "progress",
+				Type:        proto.ColumnType_INT,
+				Description: "Progress information about the instance.",
+			},
+			{
+				Name:        "flavor_name",
+				Type:        proto.ColumnType_STRING,
+				Description: "The original name of the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_vcpus",
+				Type:        proto.ColumnType_INT,
+				Description: "The number of virtual CPUs in the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_vgpus",
+				Type:        proto.ColumnType_INT,
+				Description: "The number of virtual GPUs in the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_cores",
+				Type:        proto.ColumnType_INT,
+				Description: "The number of virtual CPU cores in the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_sockets",
+				Type:        proto.ColumnType_INT,
+				Description: "The number of CPU sockets in the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_ram",
+				Type:        proto.ColumnType_INT,
+				Description: "The amount of RAM in the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_disk",
+				Type:        proto.ColumnType_INT,
+				Description: "The size of the disk in the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_swap",
+				Type:        proto.ColumnType_INT,
+				Description: "The size of the swap disk in the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_ephemeral",
+				Type:        proto.ColumnType_INT,
+				Description: "The size of the ephemeral disk in the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_rng_allowed",
+				Type:        proto.ColumnType_BOOL,
+				Description: "Whether the RNG is allowed on the flavor used to start the instance.",
+			},
+			{
+				Name:        "flavor_watchdog_action",
+				Type:        proto.ColumnType_STRING,
+				Description: "The action to take when the Nova watchdog detects the instance is not responding.",
+			},
 		},
 	}
+}
+
+type openstackInstance struct {
+	ID                   string
+	Name                 string
+	ProjectID            string
+	UserID               string
+	CreatedAt            string
+	LaunchedAt           string
+	UpdatedAt            string
+	TerminatedAt         string
+	HostID               string
+	Status               string
+	Progress             int
+	FlavorName           string
+	FlavorVcpus          int
+	FlavorVgpus          int
+	FlavorCores          int
+	FlavorSockets        int
+	FlavorRAM            int
+	FlavorDisk           int
+	FlavorSwap           int
+	FlavorEphemeral      int
+	FlavorRngAllowed     bool
+	FlavorWatchdogAction string
 }
 
 //// LIST FUNCTION
 
 func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	setLogLevel(ctx, d)
+
 	plugin.Logger(ctx).Debug("retrieving openstack instance list")
-	plugin.Logger(ctx).Debug("plugin query data: %s", toPrettyJSON(d))
-	plugin.Logger(ctx).Debug("plugin hydrate data %s", toPrettyJSON(h))
+	plugin.Logger(ctx).Debug("plugin query data", "query", toPrettyJSON(d))
+	plugin.Logger(ctx).Debug("plugin hydrate data", "hydrate", toPrettyJSON(h))
 	return nil, ErrNotImplemented
 }
 
 //// HYDRATE FUNCTIONS
 
 func getOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	setLogLevel(ctx, d)
 
 	id := d.KeyColumnQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack instance", "id", id)
@@ -72,19 +199,54 @@ func getOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 		return nil, err
 	}
 
-	return &openstackInstance{
-		ID:           id,
-		Name:         instance.Name,
-		ProjectID:    instance.TenantID,
-		UserID:       instance.UserID,
-		CreatedAt:    instance.CreatedAt.String(),
-		LaunchedAt:   instance.LaunchedAt.String(),
-		UpdatedAt:    instance.UpdatedAt.String(),
-		TerminatedAt: instance.TerminatedAt.String(),
-		HostID:       instance.HostID,
-		Status:       instance.Status,
-		Progress:     instance.Progress,
-	}, nil
+	return buildOpenStackInstance(ctx, instance), nil
+}
+
+// buildOpenStackInstance pulls data from the API result and normalises,
+// flattens or otherwise transforms it into the returned struct.
+func buildOpenStackInstance(ctx context.Context, instance *apiInstance) *openstackInstance {
+	vgpus, err := strconv.Atoi(instance.Flavor.ExtraSpecs.VGPUs)
+	if err != nil {
+		plugin.Logger(ctx).Error("error converting vCPUS to integer", "error", err)
+	}
+	cores, err := strconv.Atoi(instance.Flavor.ExtraSpecs.CPUCores)
+	if err != nil {
+		plugin.Logger(ctx).Error("error converting CPU cores to integer", "error", err)
+	}
+	sockets, err := strconv.Atoi(instance.Flavor.ExtraSpecs.CPUSockets)
+	if err != nil {
+		plugin.Logger(ctx).Error("error converting CPU sockets to integer", "error", err)
+	}
+	rngAllowed, err := strconv.ParseBool(instance.Flavor.ExtraSpecs.RNGAllowed)
+	if err != nil {
+		plugin.Logger(ctx).Error("error converting RNG allowed to boolean", "error", err)
+	}
+	result := &openstackInstance{
+		ID:                   instance.ID,
+		Name:                 instance.Name,
+		ProjectID:            instance.TenantID,
+		UserID:               instance.UserID,
+		CreatedAt:            instance.CreatedAt.String(),
+		LaunchedAt:           instance.LaunchedAt.String(),
+		UpdatedAt:            instance.UpdatedAt.String(),
+		TerminatedAt:         instance.TerminatedAt.String(),
+		HostID:               instance.HostID,
+		Status:               instance.Status,
+		Progress:             instance.Progress,
+		FlavorName:           instance.Flavor.OriginalName,
+		FlavorVcpus:          instance.Flavor.VCPUs,
+		FlavorVgpus:          vgpus,
+		FlavorCores:          cores,
+		FlavorSockets:        sockets,
+		FlavorRAM:            instance.Flavor.RAM,
+		FlavorDisk:           instance.Flavor.Disk,
+		FlavorSwap:           instance.Flavor.Swap,
+		FlavorEphemeral:      instance.Flavor.Ephemeral,
+		FlavorRngAllowed:     rngAllowed,
+		FlavorWatchdogAction: instance.Flavor.ExtraSpecs.WatchdogAction,
+	}
+	plugin.Logger(ctx).Debug("returning instance", "instance", toPrettyJSON(result))
+	return result
 }
 
 type apiInstance struct {
@@ -155,18 +317,4 @@ type apiInstance struct {
 	ConfigDrive        string    `json:"config_drive"`
 	Description        string    `json:"description"`
 	//	TaskState          interface{}              `json:"OS-EXT-STS:task_state"`
-}
-
-type openstackInstance struct {
-	ID           string
-	Name         string
-	ProjectID    string
-	UserID       string
-	CreatedAt    string
-	LaunchedAt   string
-	UpdatedAt    string
-	TerminatedAt string
-	HostID       string
-	Status       string
-	Progress     int
 }

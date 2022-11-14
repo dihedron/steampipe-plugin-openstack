@@ -78,6 +78,9 @@ type openstackProject struct {
 //// LIST FUNCTION
 
 func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	setLogLevel(ctx, d)
+
 	plugin.Logger(ctx).Debug("retrieving openstack projects list")
 	plugin.Logger(ctx).Debug("plugin query data: %s", toPrettyJSON(d))
 	plugin.Logger(ctx).Debug("plugin hydrate data %s", toPrettyJSON(h))
@@ -111,6 +114,8 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 //// HYDRATE FUNCTIONS
 
 func getOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	setLogLevel(ctx, d)
 
 	id := d.KeyColumnQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack project", "id", id)
@@ -147,7 +152,7 @@ func buildOpenStackProject(project *projects.Project) *openstackProject {
 func buildOpenStackProjectFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) projects.ListOpts {
 	opts := projects.ListOpts{}
 	for k, v := range quals {
-		plugin.Logger(ctx).Debug("filter", "key", k, "value", v)
+		plugin.Logger(ctx).Warn("filter", "key", k, "value", v)
 	}
 	return opts
 }

@@ -14,6 +14,8 @@ connection "openstack" {
     domain_name = "<domain name>"
     # only use when loggin in via app credentials
     access_token = "<token id>"
-    app_credential_key = "<application credential id>"
+    app_credential_id = "<application credential id>"
+    app_credential_name = "<application credential id>"
     app_credential_secret = "application credential secret>"
+    trace_level = "TRACE"
 }

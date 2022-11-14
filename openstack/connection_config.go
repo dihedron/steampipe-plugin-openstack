@@ -20,6 +20,7 @@ type openstackConfig struct {
 	AppCredentialName   *string `cty:"app_credential_name"`
 	AppCredentialSecret *string `cty:"app_credential_secret"`
 	AllowReauth         *bool   `cty:"allow_reauth"`
+	TraceLevel          *string `cty:"trace_level"`
 }
 
 var ConfigSchema = map[string]*schema.Attribute{
@@ -64,6 +65,9 @@ var ConfigSchema = map[string]*schema.Attribute{
 	},
 	"allow_reauth": {
 		Type: schema.TypeBool,
+	},
+	"trace_level": {
+		Type: schema.TypeString,
 	},
 }
 

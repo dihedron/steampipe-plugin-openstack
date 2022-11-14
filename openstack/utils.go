@@ -7,6 +7,7 @@ import (
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
+	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 )
 
@@ -160,6 +161,14 @@ func getAuthenticatedClient(ctx context.Context, d *plugin.QueryData) (*gophercl
 	d.ConnectionManager.Cache.Set(cacheKey, client)
 
 	return client, nil
+}
+
+func setLogLevel(ctx context.Context, d *plugin.QueryData) {
+	openstackConfig := GetConfig(d.Connection)
+	if openstackConfig.TraceLevel != nil {
+		level := *openstackConfig.EndpointUrl
+		plugin.Logger(ctx).SetLevel(hclog.LevelFromString(level))
+	}
 }
 
 // ToPrettyJSON dumps the input object to JSON.
