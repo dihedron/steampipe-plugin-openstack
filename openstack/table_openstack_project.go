@@ -73,7 +73,7 @@ func getOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 		return nil, err
 	}
 
-	return &openstackInstance{
+	return &openstackProject{
 		ID:   id,
 		Name: project.Name,
 	}, nil
