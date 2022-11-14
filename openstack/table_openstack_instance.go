@@ -171,10 +171,33 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 
 	setLogLevel(ctx, d)
 
-	plugin.Logger(ctx).Debug("retrieving openstack instance list")
-	plugin.Logger(ctx).Debug("plugin query data", "query", toPrettyJSON(d))
-	plugin.Logger(ctx).Debug("plugin hydrate data", "hydrate", toPrettyJSON(h))
-	return nil, ErrNotImplemented
+	plugin.Logger(ctx).Debug("retrieving openstack instance list", "query data", toPrettyJSON(d))
+
+	client, err := getComputeV2Client(ctx, d)
+	if err != nil {
+		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		return nil, err
+	}
+
+	opts := buildOpenStackInstanceFilter(ctx, d.KeyColumnQuals)
+
+	allPages, err := servers.List(client, opts).AllPages()
+	if err != nil {
+		plugin.Logger(ctx).Error("error listing instances with options", "options", toPrettyJSON(opts), "error", err)
+		return nil, err
+	}
+	allInstances := []*apiInstance{}
+	err = servers.ExtractServersInto(allPages, &allInstances)
+	if err != nil {
+		plugin.Logger(ctx).Error("error extracting servers", "error", err)
+		return nil, err
+	}
+	plugin.Logger(ctx).Debug("server retrieved", "count", len(allInstances))
+
+	for _, instance := range allInstances {
+		d.StreamListItem(ctx, buildOpenStackInstance(ctx, instance))
+	}
+	return nil, nil
 }
 
 //// HYDRATE FUNCTIONS
@@ -247,6 +270,16 @@ func buildOpenStackInstance(ctx context.Context, instance *apiInstance) *opensta
 	}
 	plugin.Logger(ctx).Debug("returning instance", "instance", toPrettyJSON(result))
 	return result
+}
+
+func buildOpenStackInstanceFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) servers.ListOpts {
+	opts := servers.ListOpts{
+		AllTenants: true,
+	}
+	for k, v := range quals {
+		plugin.Logger(ctx).Debug("filter", "key", k, "value", v)
+	}
+	return opts
 }
 
 type apiInstance struct {

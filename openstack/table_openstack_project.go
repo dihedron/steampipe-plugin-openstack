@@ -14,16 +14,6 @@ func tableOpenStackProject(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "openstack_project",
 		Description: "OpenStack Project (aka Tenant)",
-		List: &plugin.ListConfig{
-			Hydrate: listOpenStackProject,
-		},
-		Get: &plugin.GetConfig{
-			KeyColumns: plugin.SingleColumn("id"),
-			// IgnoreConfig: &plugin.IgnoreConfig{
-			// 	ShouldIgnoreErrorFunc: shouldIgnoreErrors([]string{"InvalidInstanceID.NotFound", "InvalidInstanceID.Unavailable", "InvalidInstanceID.Malformed"}),
-			// },
-			Hydrate: getOpenStackProject,
-		},
 		Columns: []*plugin.Column{
 			{
 				Name:        "id",
@@ -61,6 +51,36 @@ func tableOpenStackProject(_ context.Context) *plugin.Table {
 				Description: "The ID of the parent project.",
 			},
 		},
+		List: &plugin.ListConfig{
+			Hydrate: listOpenStackProject,
+			KeyColumns: plugin.KeyColumnSlice{
+				&plugin.KeyColumn{
+					Name:    "name",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "is_domain",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "domain_id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "enabled",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "parent_id",
+					Require: plugin.Optional,
+				},
+				// TODO: add tags support
+			},
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getOpenStackProject,
+		},
 	}
 }
 
@@ -81,9 +101,7 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 
 	setLogLevel(ctx, d)
 
-	plugin.Logger(ctx).Debug("retrieving openstack projects list")
-	plugin.Logger(ctx).Debug("plugin query data: %s", toPrettyJSON(d))
-	plugin.Logger(ctx).Debug("plugin hydrate data %s", toPrettyJSON(h))
+	plugin.Logger(ctx).Debug("retrieving openstack projects list", "query data", toPrettyJSON(d))
 
 	client, err := getIdentityV3Client(ctx, d)
 	if err != nil {
@@ -106,7 +124,7 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	plugin.Logger(ctx).Debug("projects retrieved", "count", len(allProjects))
 
 	for _, project := range allProjects {
-		d.StreamListItem(ctx, buildOpenStackProject(&project))
+		d.StreamListItem(ctx, buildOpenStackProject(ctx, &project))
 	}
 	return nil, nil
 }
@@ -134,11 +152,11 @@ func getOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 		return nil, err
 	}
 
-	return buildOpenStackProject(project), nil
+	return buildOpenStackProject(ctx, project), nil
 }
 
-func buildOpenStackProject(project *projects.Project) *openstackProject {
-	return &openstackProject{
+func buildOpenStackProject(ctx context.Context, project *projects.Project) *openstackProject {
+	result := &openstackProject{
 		ID:          project.ID,
 		Name:        project.Name,
 		Description: project.Description,
@@ -147,12 +165,27 @@ func buildOpenStackProject(project *projects.Project) *openstackProject {
 		Enabled:     project.Enabled,
 		ParentID:    project.ParentID,
 	}
+	plugin.Logger(ctx).Debug("returning project", "project", toPrettyJSON(result))
+	return result
 }
 
 func buildOpenStackProjectFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) projects.ListOpts {
 	opts := projects.ListOpts{}
-	for k, v := range quals {
-		plugin.Logger(ctx).Warn("filter", "key", k, "value", v)
+	if value, ok := quals["name"]; ok {
+		opts.Name = value.GetStringValue()
 	}
+	if value, ok := quals["is_domain"]; ok {
+		opts.IsDomain = pointerTo(value.GetBoolValue())
+	}
+	if value, ok := quals["domain_id"]; ok {
+		opts.DomainID = value.GetStringValue()
+	}
+	if value, ok := quals["enabled"]; ok {
+		opts.Enabled = pointerTo(value.GetBoolValue())
+	}
+	if value, ok := quals["parent_id"]; ok {
+		opts.ParentID = value.GetStringValue()
+	}
+	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
 	return opts
 }

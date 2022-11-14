@@ -176,3 +176,7 @@ func toPrettyJSON(v any) string {
 	s, _ := json.MarshalIndent(v, "", "  ")
 	return string(s)
 }
+
+func pointerTo[T any](value T) *T {
+	return &value
+}
