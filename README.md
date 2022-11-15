@@ -72,10 +72,17 @@ This plugin is still in the very early stages.
             - [X] Filter
         - [ ] *TODO*
             - [ ] Manage tags
+    - [X] Users
+        - [X] Get
+        - [X] List
+            - [X] Filter
+        - [ ] *TODO*
+            - [ ] Test
     - [X] Block storage volumes
         - [X] Get
         - [X] List
             - [X] Filter
         - [ ] *TODO*
+            - [ ] Test
             - [ ] Manage metadata
     - [X] Check that joins between entities work

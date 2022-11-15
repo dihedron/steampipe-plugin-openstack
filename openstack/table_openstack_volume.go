@@ -31,14 +31,24 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 				Description: "The description of the project (or tenant)",
 			},
 			{
+				Name:        "project_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The id of the project the volume belongs to.",
+			},
+			{
+				Name:        "user_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The id of the user who created the volume.",
+			},
+			{
 				Name:        "status",
 				Type:        proto.ColumnType_STRING,
 				Description: "Indicates the current status of the volume.",
 			},
 			{
-				Name:        "bootable",
-				Type:        proto.ColumnType_STRING, // TODO: check if convertible to BOOL
-				Description: "Indicates whether this is a bootable volume.",
+				Name:        "replication_status",
+				Type:        proto.ColumnType_STRING,
+				Description: "Indicates the status of replication of the volume.",
 			},
 			{
 				Name:        "size",
@@ -48,7 +58,27 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 			{
 				Name:        "availability_zone",
 				Type:        proto.ColumnType_STRING,
-				Description: "Availability zone of the volume; this parameter is no longer used.",
+				Description: "AvailabilityZone is which availability zone the volume is in.",
+			},
+			{
+				Name:        "bootable",
+				Type:        proto.ColumnType_STRING, // TODO: check if convertible to BOOL
+				Description: "Indicates whether this is a bootable volume.",
+			},
+			{
+				Name:        "encrypted",
+				Type:        proto.ColumnType_BOOL,
+				Description: "Denotes if the volume is encrypted.",
+			},
+			{
+				Name:        "multiattach",
+				Type:        proto.ColumnType_BOOL,
+				Description: "denotes if the volume is multi-attach capable.",
+			},
+			{
+				Name:        "consistencygroup_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The volume's consistency group id.",
 			},
 			{
 				Name:        "volume_type",
@@ -66,55 +96,40 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 				Description: "The ID of another block storage volume from which the current volume was created.",
 			},
 			{
+				Name:        "backup_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The backup ID, from which the volume was restored; this value is available starting from microversion 3.47.",
+			},
+			{
 				Name:        "created_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "Timestamp when the volume was created.",
+			},
+			{
+				Name:        "updated_at",
+				Type:        proto.ColumnType_STRING,
+				Description: "The date when this volume was last updated.",
 			},
 		},
 		List: &plugin.ListConfig{
 			Hydrate: listOpenStackVolume,
 			KeyColumns: plugin.KeyColumnSlice{
+				// &plugin.KeyColumn{
+				// 	Name:    "id",
+				// 	Require: plugin.Optional,
+				// },
 				&plugin.KeyColumn{
-					Name:    "id",
+					Name:    "name",
 					Require: plugin.Optional,
 				},
-				// &plugin.KeyColumn{
-				// 	Name:    "name",
-				// 	Require: plugin.Optional,
-				// },
-				// &plugin.KeyColumn{
-				// 	Name:    "status",
-				// 	Require: plugin.Optional,
-				// },
-				// &plugin.KeyColumn{
-				// 	Name:    "description",
-				// 	Require: plugin.Optional,
-				// },
-				// &plugin.KeyColumn{
-				// 	Name:    "admin_state_up",
-				// 	Require: plugin.Optional,
-				// },
-				// &plugin.KeyColumn{
-				// 	Name:    "network_id",
-				// 	Require: plugin.Optional,
-				// },
-				// &plugin.KeyColumn{
-				// 	Name:    "project_id",
-				// 	Require: plugin.Optional,
-				// },
-				// &plugin.KeyColumn{
-				// 	Name:    "device_owner",
-				// 	Require: plugin.Optional,
-				// },
-				// &plugin.KeyColumn{
-				// 	Name:    "device_id",
-				// 	Require: plugin.Optional,
-				// },
-				// &plugin.KeyColumn{
-				// 	Name:    "mac_address",
-				// 	Require: plugin.Optional,
-				// },
-				// TODO: add tags support
+				&plugin.KeyColumn{
+					Name:    "status",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "project_id",
+					Require: plugin.Optional,
+				},
 			},
 		},
 		Get: &plugin.GetConfig{
@@ -126,21 +141,31 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 
 // openstackPort is the struct representing the result of the list and hydrate functions.
 type openstackVolume struct {
-	ID               string
-	Name             string
-	Description      string
-	Status           string
-	Bootable         string
-	Size             int
-	AvailabilityZone string
-	VolumeType       string
-	SnapshotID       string
-	SourceVolID      string
-	CreatedAt        string
+	ID                 string
+	Name               string
+	Description        string
+	UserID             string
+	ProjectID          string
+	Status             string
+	ReplicationStatus  string
+	Bootable           string
+	Encrypted          bool
+	Multiattach        bool
+	Size               int
+	ConsistencyGroupID string
+	AvailabilityZone   string
+	VolumeType         string
+	SnapshotID         string
+	SourceVolID        string
+	BackupID           string
+	CreatedAt          string
+	UpdatedAt          string
 	// // Instances onto which the volume is attached.
-	// Attachments []map[string]interface{} `json:"attachments"`
+	// Attachments []Attachment `json:"attachments"`
 	// // Arbitrary key-value pairs defined by the user.
 	// Metadata map[string]string `json:"metadata"`
+	// // Image metadata entries, only included for volumes that were created from an image, or from a snapshot of a volume originally created from an image.
+	// VolumeImageMetadata map[string]string `json:"volume_image_metadata"`
 }
 
 //// LIST FUNCTION
@@ -234,6 +259,7 @@ func buildOpenStackVolumeFilter(ctx context.Context, quals plugin.KeyColumnEqual
 	if value, ok := quals["project_id"]; ok {
 		opts.TenantID = value.GetStringValue()
 	}
+	// TODO: add metadata
 	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
 	return opts
 }

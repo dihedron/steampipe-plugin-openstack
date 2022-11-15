@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	// defaults currently referring to Train
 	DefaultComputeV2Microversion      = "2.79"
 	DefaultIdentityV3Microversion     = "3.13"
 	DefaultBlockStorageV3Microversion = "3.59"

@@ -14,6 +14,7 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 		TableMap: map[string]*plugin.Table{
 			"openstack_instance": tableOpenStackInstance(ctx),
 			"openstack_project":  tableOpenStackProject(ctx),
+			"openstack_user":     tableOpenStackUser(ctx),
 			"openstack_port":     tableOpenStackPort(ctx),
 			"openstack_volume":   tableOpenStackVolume(ctx),
 			// "openstack_attachment":        tableOpenStackAttachment(ctx),
