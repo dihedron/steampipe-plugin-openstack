@@ -185,6 +185,8 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 	}
 }
 
+// openstackInstance is the type representing the return value of
+// list and get operations.
 type openstackInstance struct {
 	ID                   string
 	Name                 string
@@ -220,9 +222,9 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 
 	plugin.Logger(ctx).Debug("retrieving openstack instance list", "query data", toPrettyJSON(d))
 
-	client, err := getServiceClient(ctx, d, "openstack_compute_v2")
+	client, err := getServiceClient(ctx, d, ComputeV2)
 	if err != nil {
-		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		plugin.Logger(ctx).Error("error retrieving client", "error", err)
 		return nil, err
 	}
 
@@ -236,10 +238,10 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 	allInstances := []*apiInstance{}
 	err = servers.ExtractServersInto(allPages, &allInstances)
 	if err != nil {
-		plugin.Logger(ctx).Error("error extracting servers", "error", err)
+		plugin.Logger(ctx).Error("error extracting instances", "error", err)
 		return nil, err
 	}
-	plugin.Logger(ctx).Debug("server retrieved", "count", len(allInstances))
+	plugin.Logger(ctx).Debug("instances retrieved", "count", len(allInstances))
 
 	for _, instance := range allInstances {
 		d.StreamListItem(ctx, buildOpenStackInstance(ctx, instance))
@@ -256,9 +258,9 @@ func getOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	id := d.KeyColumnQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack instance", "id", id)
 
-	client, err := getServiceClient(ctx, d, "openstack_compute_v2")
+	client, err := getServiceClient(ctx, d, ComputeV2)
 	if err != nil {
-		plugin.Logger(ctx).Error("error creating compute v2 client", "error", err)
+		plugin.Logger(ctx).Error("error retrieving client", "error", err)
 		return nil, err
 	}
 
@@ -359,6 +361,13 @@ func buildOpenStackInstanceFilter(ctx context.Context, quals plugin.KeyColumnEqu
 	return opts
 }
 
+// apiInstance is an internal type used to unmarshal more datafrom the API
+// response than would usually be possible through the ordinary gophercloud
+// struct. OpenStack API microversions enable more response data that is not
+// taken into account by the gophercloud library, which unmarshals only what
+// is available at the base level for each API version, for backward compatibility.
+// This is also why there is an ExtrctInto function that allows you to pass in
+// an arbitrary struct to marshal the responsa data into.
 type apiInstance struct {
 	ID           string                 `json:"id"`
 	TenantID     string                 `json:"tenant_id"`

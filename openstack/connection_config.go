@@ -6,24 +6,25 @@ import (
 )
 
 type openstackConfig struct {
-	EndpointUrl            *string `cty:"endpoint_url"`
-	UserID                 *string `cty:"userid"`
-	Username               *string `cty:"username"`
-	Password               *string `cty:"password"`
-	Region                 *string `cty:"region"`
-	ProjectID              *string `cty:"project_id"`
-	ProjectName            *string `cty:"project_name"`
-	DomainID               *string `cty:"domain_id"`
-	DomainName             *string `cty:"domain_name"`
-	AccessToken            *string `cty:"access_token"`
-	AppCredentialID        *string `cty:"app_credential_id"`
-	AppCredentialName      *string `cty:"app_credential_name"`
-	AppCredentialSecret    *string `cty:"app_credential_secret"`
-	AllowReauth            *bool   `cty:"allow_reauth"`
-	TraceLevel             *string `cty:"trace_level"`
-	IdentityV3Microversion *string `cty:"identity_v3_microversion"`
-	ComputeV2Microversion  *string `cty:"compute_v2_microversion"`
-	NetworkV2Microversion  *string `cty:"network_v2_microversion"`
+	EndpointUrl                *string `cty:"endpoint_url"`
+	UserID                     *string `cty:"userid"`
+	Username                   *string `cty:"username"`
+	Password                   *string `cty:"password"`
+	Region                     *string `cty:"region"`
+	ProjectID                  *string `cty:"project_id"`
+	ProjectName                *string `cty:"project_name"`
+	DomainID                   *string `cty:"domain_id"`
+	DomainName                 *string `cty:"domain_name"`
+	AccessToken                *string `cty:"access_token"`
+	AppCredentialID            *string `cty:"app_credential_id"`
+	AppCredentialName          *string `cty:"app_credential_name"`
+	AppCredentialSecret        *string `cty:"app_credential_secret"`
+	AllowReauth                *bool   `cty:"allow_reauth"`
+	TraceLevel                 *string `cty:"trace_level"`
+	IdentityV3Microversion     *string `cty:"identity_v3_microversion"`
+	ComputeV2Microversion      *string `cty:"compute_v2_microversion"`
+	NetworkV2Microversion      *string `cty:"network_v2_microversion"`
+	BlockStorageV3Microversion *string `cty:"blockstorage_v3_microversion"`
 }
 
 var ConfigSchema = map[string]*schema.Attribute{

@@ -37,33 +37,45 @@ $> steampipe query "select vm.id, vm.name, vm.host_id, vm.flavor_sockets, vm.fla
 
 This plugin is still in the very early stages.
 
-- [x] Skeleton
-- [x] Configuration schema
-    - [X] Make OpenStack API micro-versions configurable
-- [X] Create connection to OpenStack APIs
-- [X] Create connection to Compute APIs
-- [X] Implement "get VM instance" (by ID)
-    - [ ] Fill all fields from VM instance
-        - [X] Original flavor
-        - [ ] More fields
-- [X] Implement "list VM instances"
-    - [X] Filter by project ID
-    - [X] Filter by hypervisor
-    - [X] Filter by availability zone
-    - [ ] Filter by tags
-- [X] Create connection to Identity APIs
-- [X] Implement "get project" (by ID)
-    - [X] Fill all fields from project
-- [X] Implement "list projects"
-    - [X] Add filter criteria
-    - [ ] Filter by tags
-
-- [X] Create connection to Network APIs
-- [X] Implement "get port" (by ID)
-    - [X] Fill all fields from port
-- [X] Implement "list ports"
-    - [X] Add filter criteria
-    - [ ] Filter by tags    
-- [X] Check that joins between instance and project (by ID) work
-- [ ] Understand how to expunge embedded entities from instance (e.g . []SecurityGroups)
-- [ ] ...
+- *General understanding*
+    - [ ] Understand how to expunge into own table embedded entities (e.g. []SecurityGroups from port)
+    - [ ] Understand how to work with JSONb data
+    - [ ] Understand how to use different operators in list filter (e.g. "description match <regexp>")
+- *Implementation* 
+    - [x] Skeleton
+    - [x] Configuration schema
+        - [X] Make OpenStack API micro-versions configurable
+    - [X] Create connection
+        - [X] OpenStack APIs
+        - [X] Identity APIs
+        - [X] Compute APIs
+        - [X] Network APIs
+        - [X] Block Storage APIs
+    - [X] Virtual machines instances
+        - [X] Get
+        - [X] List
+            - [X] Filter
+        - [X] Embed original flavor
+        - *TODO*
+            - [ ] Add more fields
+            - [ ] Embed image info
+            - [ ] Manage tags
+    - [X] Network ports
+        - [X] Get
+        - [X] List
+            - [X] Filter
+        - *TODO*
+            - [ ] Manage tags
+    - [X] Projects
+        - [X] Get
+        - [X] List
+            - [X] Filter
+        - *TODO*
+            - [ ] Manage tags
+    - [X] Block storage volumes
+        - [X] Get
+        - [X] List
+            - [X] Filter
+        - *TODO*
+            - [ ] Manage metadata
+    - [X] Check that joins between entities work

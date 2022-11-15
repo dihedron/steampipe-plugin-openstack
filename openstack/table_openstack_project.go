@@ -103,9 +103,9 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 
 	plugin.Logger(ctx).Debug("retrieving openstack projects list", "query data", toPrettyJSON(d))
 
-	client, err := getServiceClient(ctx, d, "openstack_identity_v3")
+	client, err := getServiceClient(ctx, d, IdentityV3)
 	if err != nil {
-		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		plugin.Logger(ctx).Error("error retrieving client", "error", err)
 		return nil, err
 	}
 
@@ -138,9 +138,9 @@ func getOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 	id := d.KeyColumnQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack project", "id", id)
 
-	client, err := getServiceClient(ctx, d, "openstack_identity_v3")
+	client, err := getServiceClient(ctx, d, IdentityV3)
 	if err != nil {
-		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		plugin.Logger(ctx).Error("error retrieving client", "error", err)
 		return nil, err
 	}
 

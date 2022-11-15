@@ -166,11 +166,11 @@ func listOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 
 	setLogLevel(ctx, d)
 
-	plugin.Logger(ctx).Debug("retrieving openstack projects list", "query data", toPrettyJSON(d))
+	plugin.Logger(ctx).Debug("retrieving openstack ports list", "query data", toPrettyJSON(d))
 
-	client, err := getServiceClient(ctx, d, "openstack_network_v2")
+	client, err := getServiceClient(ctx, d, NetworkV2)
 	if err != nil {
-		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		plugin.Logger(ctx).Error("error retrieving client", "error", err)
 		return nil, err
 	}
 
@@ -201,11 +201,11 @@ func getOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydrat
 	setLogLevel(ctx, d)
 
 	id := d.KeyColumnQuals["id"].GetStringValue()
-	plugin.Logger(ctx).Debug("retrieving openstack project", "id", id)
+	plugin.Logger(ctx).Debug("retrieving openstack port", "id", id)
 
-	client, err := getServiceClient(ctx, d, "openstack_network_v2")
+	client, err := getServiceClient(ctx, d, NetworkV2)
 	if err != nil {
-		plugin.Logger(ctx).Error("error creating identity v3 client", "error", err)
+		plugin.Logger(ctx).Error("error retrieving client", "error", err)
 		return nil, err
 	}
 
@@ -213,7 +213,7 @@ func getOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydrat
 	var port *ports.Port
 	port, err = result.Extract()
 	if err != nil {
-		plugin.Logger(ctx).Error("error retrieving project", "error", err)
+		plugin.Logger(ctx).Error("error retrieving port", "error", err)
 		return nil, err
 	}
 
@@ -236,7 +236,7 @@ func buildOpenStackPort(ctx context.Context, port *ports.Port) *openstackPort {
 		CreatedAt:      port.CreatedAt.String(),
 		UpdatedAt:      port.UpdatedAt.String(),
 	}
-	plugin.Logger(ctx).Debug("returning project", "project", toPrettyJSON(result))
+	plugin.Logger(ctx).Debug("returning port", "port", toPrettyJSON(result))
 	return result
 }
 
