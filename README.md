@@ -40,7 +40,7 @@ This plugin is still in the very early stages.
 - *General understanding*
     - [ ] Understand how to expunge into own table embedded entities (e.g. []SecurityGroups from port)
     - [ ] Understand how to work with JSONb data
-    - [ ] Understand how to use different operators in list filter (e.g. "description match <regexp>")
+    - [ ] Understand how to use different operators in list filter (e.g. "description match regexp")
 - *Implementation* 
     - [x] Skeleton
     - [x] Configuration schema
@@ -56,7 +56,7 @@ This plugin is still in the very early stages.
         - [X] List
             - [X] Filter
         - [X] Embed original flavor
-        - *TODO*
+        - [ ] *TODO*
             - [ ] Add more fields
             - [ ] Embed image info
             - [ ] Manage tags
@@ -64,18 +64,18 @@ This plugin is still in the very early stages.
         - [X] Get
         - [X] List
             - [X] Filter
-        - *TODO*
+        - [ ] *TODO*
             - [ ] Manage tags
     - [X] Projects
         - [X] Get
         - [X] List
             - [X] Filter
-        - *TODO*
+        - [ ] *TODO*
             - [ ] Manage tags
     - [X] Block storage volumes
         - [X] Get
         - [X] List
             - [X] Filter
-        - *TODO*
+        - [ ] *TODO*
             - [ ] Manage metadata
     - [X] Check that joins between entities work
