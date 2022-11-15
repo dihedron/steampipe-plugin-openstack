@@ -2,6 +2,7 @@ package openstack
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
@@ -62,7 +63,7 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 			},
 			{
 				Name:        "bootable",
-				Type:        proto.ColumnType_STRING, // TODO: check if convertible to BOOL
+				Type:        proto.ColumnType_BOOL,
 				Description: "Indicates whether this is a bootable volume.",
 			},
 			{
@@ -148,7 +149,7 @@ type openstackVolume struct {
 	ProjectID          string
 	Status             string
 	ReplicationStatus  string
-	Bootable           string
+	Bootable           bool
 	Encrypted          bool
 	Multiattach        bool
 	Size               int
@@ -189,7 +190,8 @@ func listOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 		plugin.Logger(ctx).Error("error listing volumes with options", "options", toPrettyJSON(opts), "error", err)
 		return nil, err
 	}
-	allVolumes, err := volumes.ExtractVolumes(allPages)
+	allVolumes := []*apiVolume{}
+	err = volumes.ExtractVolumesInto(allPages, &allVolumes)
 	if err != nil {
 		plugin.Logger(ctx).Error("error extracting volumes", "error", err)
 		return nil, err
@@ -197,7 +199,7 @@ func listOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 	plugin.Logger(ctx).Debug("volumes retrieved", "count", len(allVolumes))
 
 	for _, volume := range allVolumes {
-		d.StreamListItem(ctx, buildOpenStackVolume(ctx, &volume))
+		d.StreamListItem(ctx, buildOpenStackVolume(ctx, volume))
 	}
 	return nil, nil
 }
@@ -218,8 +220,10 @@ func getOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hydr
 	}
 
 	result := volumes.Get(client, id)
-	var volume *volumes.Volume
-	volume, err = result.Extract()
+	//plugin.Logger(ctx).Debug("request run", "result", toPrettyJSON(result))
+
+	volume := &apiVolume{}
+	err = result.ExtractInto(volume)
 	if err != nil {
 		plugin.Logger(ctx).Error("error retrieving volume", "error", err)
 		return nil, err
@@ -228,19 +232,32 @@ func getOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hydr
 	return buildOpenStackVolume(ctx, volume), nil
 }
 
-func buildOpenStackVolume(ctx context.Context, volume *volumes.Volume) *openstackVolume {
+func buildOpenStackVolume(ctx context.Context, volume *apiVolume) *openstackVolume {
+
+	bootable, err := strconv.ParseBool(volume.Bootable)
+	if err != nil {
+		plugin.Logger(ctx).Error("error converting bootable to boolean", "error", err)
+	}
 	result := &openstackVolume{
-		ID:               volume.ID,
-		Name:             volume.Name,
-		Description:      volume.Description,
-		Status:           volume.Status,
-		Bootable:         volume.Bootable,
-		Size:             volume.Size,
-		AvailabilityZone: volume.AvailabilityZone,
-		VolumeType:       volume.VolumeType,
-		SnapshotID:       volume.SnapshotID,
-		SourceVolID:      volume.SourceVolID,
-		CreatedAt:        volume.CreatedAt.String(),
+		ID:                 volume.ID,
+		Name:               volume.Name,
+		Description:        volume.Description,
+		Status:             volume.Status,
+		Bootable:           bootable,
+		Size:               volume.Size,
+		AvailabilityZone:   volume.AvailabilityZone,
+		VolumeType:         volume.VolumeType,
+		SnapshotID:         volume.SnapshotID,
+		SourceVolID:        volume.SourceVolID,
+		CreatedAt:          volume.CreatedAt.String(),
+		UserID:             volume.UserID,
+		ProjectID:          volume.OsVolTenantAttrTenantID,
+		ReplicationStatus:  volume.ReplicationStatus,
+		Encrypted:          volume.Encrypted,
+		Multiattach:        volume.Multiattach,
+		ConsistencyGroupID: volume.ConsistencyGroupID,
+		BackupID:           volume.BackupID,
+		UpdatedAt:          volume.UpdatedAt.String(),
 	}
 	plugin.Logger(ctx).Debug("returning volume", "volume", toPrettyJSON(result))
 	return result
@@ -262,4 +279,42 @@ func buildOpenStackVolumeFilter(ctx context.Context, quals plugin.KeyColumnEqual
 	// TODO: add metadata
 	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
 	return opts
+}
+
+type apiVolume struct {
+	Attachments        []interface{} `json:"attachments"`
+	AvailabilityZone   string        `json:"availability_zone"`
+	Bootable           string        `json:"bootable"`
+	ConsistencyGroupID string        `json:"consistencygroup_id"`
+	CreatedAt          Time          `json:"created_at"`
+	Description        string        `json:"description"`
+	Encrypted          bool          `json:"encrypted"`
+	GroupID            string        `json:"group_id"`
+	BackupID           string        `json:"backup_id"`
+	ID                 string        `json:"id"`
+	Links              []struct {
+		Href string `json:"href"`
+		Rel  string `json:"rel"`
+	} `json:"links"`
+	Metadata struct {
+		Readonly string `json:"readonly"`
+	} `json:"metadata"`
+	MigrationStatus           string `json:"migration_status"`
+	Multiattach               bool   `json:"multiattach"`
+	Name                      string `json:"name"`
+	OsVolHostAttrHost         string `json:"os-vol-host-attr:host"`
+	OsVolMigStatusAttrMigstat string `json:"os-vol-mig-status-attr:migstat"`
+	OsVolMigStatusAttrNameID  string `json:"os-vol-mig-status-attr:name_id"`
+	OsVolTenantAttrTenantID   string `json:"os-vol-tenant-attr:tenant_id"`
+	ProviderID                string `json:"provider_id"`
+	ReplicationStatus         string `json:"replication_status"`
+	ServiceUUID               string `json:"service_uuid"`
+	SharedTargets             bool   `json:"shared_targets"`
+	Size                      int    `json:"size"`
+	SnapshotID                string `json:"snapshot_id"`
+	SourceVolID               string `json:"source_volid"`
+	Status                    string `json:"status"`
+	UpdatedAt                 Time   `json:"updated_at"`
+	UserID                    string `json:"user_id"`
+	VolumeType                string `json:"volume_type"`
 }
