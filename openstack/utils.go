@@ -16,7 +16,7 @@ var ErrNotImplemented = errors.New("not implemented")
 func setLogLevel(ctx context.Context, d *plugin.QueryData) {
 	openstackConfig := GetConfig(d.Connection)
 	if openstackConfig.TraceLevel != nil {
-		level := *openstackConfig.EndpointUrl
+		level := *openstackConfig.TraceLevel
 		plugin.Logger(ctx).SetLevel(hclog.LevelFromString(level))
 	}
 }
