@@ -15,13 +15,6 @@ var layouts = []string{
 	"2006-01-02T15:04:05.000000",
 }
 
-func (t *Time) IsZero() bool {
-	if t != nil {
-		return time.Time(*t).IsZero()
-	}
-	return true
-}
-
 func (t *Time) Format(format string) string {
 	if t != nil {
 		return time.Time(*t).Format(format)
@@ -66,4 +59,11 @@ func (t *Time) MarshalJSON() ([]byte, error) {
 
 func (t *Time) String() string {
 	return (time.Time(*t)).String()
+}
+
+func (t *Time) IsZero() bool {
+	if t == nil {
+		return true
+	}
+	return time.Time(*t).IsZero()
 }

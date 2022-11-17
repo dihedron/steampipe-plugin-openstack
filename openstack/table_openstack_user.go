@@ -6,6 +6,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/users"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -19,36 +20,43 @@ func tableOpenStackUser(_ context.Context) *plugin.Table {
 				Name:        "id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The unique id of the user.",
+				Transform:   transform.FromField("ID"),
 			},
 			{
 				Name:        "name",
 				Type:        proto.ColumnType_STRING,
 				Description: "The name of the user.",
+				Transform:   transform.FromField("Name"),
 			},
 			{
 				Name:        "description",
 				Type:        proto.ColumnType_STRING,
 				Description: "The description of the user.",
+				Transform:   transform.FromField("Description"),
 			},
 			{
 				Name:        "default_project_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the default project of the user.",
+				Transform:   transform.FromField("DefaultProjectID"),
 			},
 			{
 				Name:        "domain_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the domain the user belongs to.",
+				Transform:   transform.FromField("DomainID"),
 			},
 			{
 				Name:        "enabled",
 				Type:        proto.ColumnType_BOOL,
 				Description: "Indicates whether or not the user is enabled.",
+				Transform:   transform.FromField("Enabled"),
 			},
 			{
 				Name:        "password_expires_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The timestamp when the user's password expires.",
+				Transform:   TransformFromTimeField("PasswordExpiresAt"),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -84,21 +92,6 @@ func tableOpenStackUser(_ context.Context) *plugin.Table {
 	}
 }
 
-// openstackUser is the struct representing the result of the list and hydrate functions.
-type openstackUser struct {
-	ID                string
-	Name              string
-	Description       string
-	DomainID          string
-	DefaultProjectID  string
-	Enabled           bool
-	PasswordExpiresAt string
-	// // Extra is a collection of miscellaneous key/values.
-	// Extra map[string]interface{} `json:"-"`
-	// // Options are a set of defined options of the user.
-	// Options map[string]interface{} `json:"options"`
-}
-
 //// LIST FUNCTION
 
 func listOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
@@ -120,15 +113,15 @@ func listOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 		plugin.Logger(ctx).Error("error listing users with options", "options", toPrettyJSON(opts), "error", err)
 		return nil, err
 	}
-	allProjects, err := users.ExtractUsers(allPages)
+	allUsers, err := users.ExtractUsers(allPages)
 	if err != nil {
 		plugin.Logger(ctx).Error("error extracting users", "error", err)
 		return nil, err
 	}
-	plugin.Logger(ctx).Debug("users retrieved", "count", len(allProjects))
+	plugin.Logger(ctx).Debug("users retrieved", "count", len(allUsers))
 
-	for _, project := range allProjects {
-		d.StreamListItem(ctx, buildOpenStackUser(ctx, &project))
+	for _, user := range allUsers {
+		d.StreamListItem(ctx, &user)
 	}
 	return nil, nil
 }
@@ -156,21 +149,7 @@ func getOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.Hydrat
 		return nil, err
 	}
 
-	return buildOpenStackUser(ctx, user), nil
-}
-
-func buildOpenStackUser(ctx context.Context, user *users.User) *openstackUser {
-	result := &openstackUser{
-		ID:          user.ID,
-		Name:        user.Name,
-		Description: user.Description,
-		// IsDomain:    project.IsDomain,
-		// DomainID:    project.DomainID,
-		// Enabled:     project.Enabled,
-		// ParentID:    project.ParentID,
-	}
-	plugin.Logger(ctx).Debug("returning user", "user", toPrettyJSON(result))
-	return result
+	return user, nil
 }
 
 func buildOpenStackUserFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) users.ListOpts {

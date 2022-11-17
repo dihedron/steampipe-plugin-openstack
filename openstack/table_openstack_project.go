@@ -6,6 +6,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/projects"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -19,36 +20,43 @@ func tableOpenStackProject(_ context.Context) *plugin.Table {
 				Name:        "id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The unique id of the project (or tenant).",
+				Transform:   transform.FromField("ID"),
 			},
 			{
 				Name:        "name",
 				Type:        proto.ColumnType_STRING,
 				Description: "The name of the project (or tenant).",
+				Transform:   transform.FromField("Name"),
 			},
 			{
 				Name:        "description",
 				Type:        proto.ColumnType_STRING,
 				Description: "The description of the project (or tenant)",
+				Transform:   transform.FromField("Description"),
 			},
 			{
 				Name:        "is_domain",
 				Type:        proto.ColumnType_BOOL,
 				Description: "Indicates whether the project is a domain.",
+				Transform:   transform.FromField("IsDomain"),
 			},
 			{
 				Name:        "domain_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the domain the project belongs to.",
+				Transform:   transform.FromField("DomainID"),
 			},
 			{
 				Name:        "enabled",
 				Type:        proto.ColumnType_BOOL,
 				Description: "Indicates whether or not the project is enabled.",
+				Transform:   transform.FromField("Enabled"),
 			},
 			{
 				Name:        "parent_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the parent project.",
+				Transform:   transform.FromField("ParentID"),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -84,17 +92,6 @@ func tableOpenStackProject(_ context.Context) *plugin.Table {
 	}
 }
 
-// openstackProject is the struct representing the result of the list and hydrate functions.
-type openstackProject struct {
-	ID          string
-	Name        string
-	Description string
-	IsDomain    bool
-	DomainID    string
-	Enabled     bool
-	ParentID    string
-}
-
 //// LIST FUNCTION
 
 func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
@@ -124,7 +121,7 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	plugin.Logger(ctx).Debug("projects retrieved", "count", len(allProjects))
 
 	for _, project := range allProjects {
-		d.StreamListItem(ctx, buildOpenStackProject(ctx, &project))
+		d.StreamListItem(ctx, &project)
 	}
 	return nil, nil
 }
@@ -152,21 +149,7 @@ func getOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 		return nil, err
 	}
 
-	return buildOpenStackProject(ctx, project), nil
-}
-
-func buildOpenStackProject(ctx context.Context, project *projects.Project) *openstackProject {
-	result := &openstackProject{
-		ID:          project.ID,
-		Name:        project.Name,
-		Description: project.Description,
-		IsDomain:    project.IsDomain,
-		DomainID:    project.DomainID,
-		Enabled:     project.Enabled,
-		ParentID:    project.ParentID,
-	}
-	plugin.Logger(ctx).Debug("returning project", "project", toPrettyJSON(result))
-	return result
+	return project, nil
 }
 
 func buildOpenStackProjectFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) projects.ListOpts {

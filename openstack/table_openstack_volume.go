@@ -2,11 +2,11 @@ package openstack
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -20,96 +20,115 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 				Name:        "id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The unique id of the volume.",
+				Transform:   transform.FromField("ID"),
 			},
 			{
 				Name:        "name",
 				Type:        proto.ColumnType_STRING,
 				Description: "Human-readable name for the volume. Might not be unique.",
+				Transform:   transform.FromField("Name"),
 			},
 			{
 				Name:        "description",
 				Type:        proto.ColumnType_STRING,
 				Description: "The description of the project (or tenant)",
+				Transform:   transform.FromField("Description"),
 			},
 			{
 				Name:        "project_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The id of the project the volume belongs to.",
+				Transform:   transform.FromField("OsVolTenantAttrTenantID"),
 			},
 			{
 				Name:        "user_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The id of the user who created the volume.",
+				Transform:   transform.FromField("UserID"),
 			},
 			{
 				Name:        "status",
 				Type:        proto.ColumnType_STRING,
 				Description: "Indicates the current status of the volume.",
+				Transform:   transform.FromField("Status"),
 			},
 			{
 				Name:        "replication_status",
 				Type:        proto.ColumnType_STRING,
 				Description: "Indicates the status of replication of the volume.",
+				Transform:   transform.FromField("ReplicationStatus"),
 			},
 			{
 				Name:        "size",
 				Type:        proto.ColumnType_INT,
 				Description: "Size of the volume in GB.",
+				Transform:   transform.FromField("Size"),
 			},
 			{
 				Name:        "availability_zone",
 				Type:        proto.ColumnType_STRING,
 				Description: "AvailabilityZone is which availability zone the volume is in.",
+				Transform:   transform.FromField("AvailabilityZone"),
 			},
 			{
 				Name:        "bootable",
 				Type:        proto.ColumnType_BOOL,
 				Description: "Indicates whether this is a bootable volume.",
+				Transform:   transform.FromField("Bootable"),
 			},
 			{
 				Name:        "encrypted",
 				Type:        proto.ColumnType_BOOL,
 				Description: "Denotes if the volume is encrypted.",
+				Transform:   transform.FromField("Encrypted"),
 			},
 			{
 				Name:        "multiattach",
 				Type:        proto.ColumnType_BOOL,
 				Description: "denotes if the volume is multi-attach capable.",
+				Transform:   transform.FromField("Multiattach"),
 			},
 			{
 				Name:        "consistencygroup_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The volume's consistency group id.",
+				Transform:   transform.FromField("ConsistencyGroupID"),
 			},
 			{
 				Name:        "volume_type",
 				Type:        proto.ColumnType_STRING,
 				Description: "The type of volume to create, either SATA or SSD.",
+				Transform:   transform.FromField("VolumeType"),
 			},
 			{
 				Name:        "snapshot_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the snapshot from which the volume was created.",
+				Transform:   transform.FromField("SnapshotID"),
 			},
 			{
 				Name:        "source_vol_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of another block storage volume from which the current volume was created.",
+				Transform:   transform.FromField("SourceVolID"),
 			},
 			{
 				Name:        "backup_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The backup ID, from which the volume was restored; this value is available starting from microversion 3.47.",
+				Transform:   transform.FromField("BackupID"),
 			},
 			{
 				Name:        "created_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "Timestamp when the volume was created.",
+				Transform:   TransformFromTimeField("CreatedAt"),
 			},
 			{
 				Name:        "updated_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The date when this volume was last updated.",
+				Transform:   TransformFromTimeField("UpdatedAt"),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -138,35 +157,6 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 			Hydrate:    getOpenStackVolume,
 		},
 	}
-}
-
-// openstackPort is the struct representing the result of the list and hydrate functions.
-type openstackVolume struct {
-	ID                 string
-	Name               string
-	Description        string
-	UserID             string
-	ProjectID          string
-	Status             string
-	ReplicationStatus  string
-	Bootable           bool
-	Encrypted          bool
-	Multiattach        bool
-	Size               int
-	ConsistencyGroupID string
-	AvailabilityZone   string
-	VolumeType         string
-	SnapshotID         string
-	SourceVolID        string
-	BackupID           string
-	CreatedAt          string
-	UpdatedAt          string
-	// // Instances onto which the volume is attached.
-	// Attachments []Attachment `json:"attachments"`
-	// // Arbitrary key-value pairs defined by the user.
-	// Metadata map[string]string `json:"metadata"`
-	// // Image metadata entries, only included for volumes that were created from an image, or from a snapshot of a volume originally created from an image.
-	// VolumeImageMetadata map[string]string `json:"volume_image_metadata"`
 }
 
 //// LIST FUNCTION
@@ -199,7 +189,7 @@ func listOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 	plugin.Logger(ctx).Debug("volumes retrieved", "count", len(allVolumes))
 
 	for _, volume := range allVolumes {
-		d.StreamListItem(ctx, buildOpenStackVolume(ctx, volume))
+		d.StreamListItem(ctx, volume)
 	}
 	return nil, nil
 }
@@ -229,40 +219,8 @@ func getOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hydr
 		return nil, err
 	}
 
-	return buildOpenStackVolume(ctx, volume), nil
+	return volume, nil
 }
-
-func buildOpenStackVolume(ctx context.Context, volume *apiVolume) *openstackVolume {
-
-	bootable, err := strconv.ParseBool(volume.Bootable)
-	if err != nil {
-		plugin.Logger(ctx).Error("error converting bootable to boolean", "error", err)
-	}
-	result := &openstackVolume{
-		ID:                 volume.ID,
-		Name:               volume.Name,
-		Description:        volume.Description,
-		Status:             volume.Status,
-		Bootable:           bootable,
-		Size:               volume.Size,
-		AvailabilityZone:   volume.AvailabilityZone,
-		VolumeType:         volume.VolumeType,
-		SnapshotID:         volume.SnapshotID,
-		SourceVolID:        volume.SourceVolID,
-		CreatedAt:          volume.CreatedAt.String(),
-		UserID:             volume.UserID,
-		ProjectID:          volume.OsVolTenantAttrTenantID,
-		ReplicationStatus:  volume.ReplicationStatus,
-		Encrypted:          volume.Encrypted,
-		Multiattach:        volume.Multiattach,
-		ConsistencyGroupID: volume.ConsistencyGroupID,
-		BackupID:           volume.BackupID,
-		UpdatedAt:          volume.UpdatedAt.String(),
-	}
-	plugin.Logger(ctx).Debug("returning volume", "volume", toPrettyJSON(result))
-	return result
-}
-
 func buildOpenStackVolumeFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) volumes.ListOpts {
 	opts := volumes.ListOpts{
 		AllTenants: true,

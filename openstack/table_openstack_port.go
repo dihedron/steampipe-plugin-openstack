@@ -6,6 +6,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/ports"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -19,67 +20,87 @@ func tableOpenStackPort(_ context.Context) *plugin.Table {
 				Name:        "id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The unique id of the port.",
+				Transform:   transform.FromField("ID"),
 			},
 			{
 				Name:        "name",
 				Type:        proto.ColumnType_STRING,
 				Description: "Human-readable name for the port. Might not be unique.",
+				Transform:   transform.FromField("Name"),
 			},
 			{
 				Name:        "description",
 				Type:        proto.ColumnType_STRING,
 				Description: "The description of the project (or tenant)",
+				Transform:   transform.FromField("Description"),
 			},
 			{
 				Name:        "network_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "Network that this port is associated with.",
+				Transform:   transform.FromField("NetworkID"),
 			},
 			{
 				Name:        "admin_state_up",
 				Type:        proto.ColumnType_BOOL,
 				Description: "Administrative state of port. If false (down), port does not forward packets.",
+				Transform:   transform.FromField("AdminStateUp"),
 			},
 			{
 				Name:        "status",
 				Type:        proto.ColumnType_STRING,
 				Description: "Indicates whether network is currently operational. Possible values include `ACTIVE', `DOWN', `BUILD', or `ERROR'. Plug-ins might define additional values.",
+				Transform:   transform.FromField("Status"),
 			},
 			{
 				Name:        "mac_address",
 				Type:        proto.ColumnType_STRING,
 				Description: "The MAC address associated with this port.",
+				Transform:   transform.FromField("MACAddress"),
 			},
 			{
 				Name:        "project_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the project owning this port.",
+				Transform:   transform.FromField("ProjectID"),
 			},
 			{
 				Name:        "device_owner",
 				Type:        proto.ColumnType_STRING,
 				Description: "Identifies the entity (e.g.: dhcp agent) using this port.",
+				Transform:   transform.FromField("DeviceOwner"),
 			},
 			{
 				Name:        "device_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "Identifies the device (e.g., virtual server) using this port.",
+				Transform:   transform.FromField("DeviceID"),
 			},
 			{
 				Name:        "revision_number",
 				Type:        proto.ColumnType_INT,
 				Description: "RevisionNumber optionally set via extensions/standard-attr-revisions.",
+				Transform:   transform.FromField("RevisionNumber"),
 			},
 			{
 				Name:        "created_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "Timestamp when the port was created.",
+				Transform:   TransformFromTimeField("CreatedAt"),
 			},
 			{
 				Name:        "updated_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "Timestamp when the port was last updated.",
+				Transform:   TransformFromTimeField("UpdatedAt"),
 			},
+			// {
+			// 	Name:        "security_group_ids",
+			// 	Description: resourceInterfaceDescription("akas"),
+			// 	Type:        proto.ColumnType_JSON,
+			// 	Hydrate:     getEc2InstanceARN,
+			// 	Transform:   transform.FromValue().Transform(transform.EnsureStringArray),
+			// },
 		},
 		List: &plugin.ListConfig{
 			Hydrate: listOpenStackPort,
@@ -134,32 +155,6 @@ func tableOpenStackPort(_ context.Context) *plugin.Table {
 	}
 }
 
-// openstackPort is the struct representing the result of the list and hydrate functions.
-type openstackPort struct {
-	ID             string
-	Name           string
-	Description    string
-	NetworkID      string
-	AdminStateUp   bool
-	Status         string
-	MACAddress     string
-	ProjectID      string
-	DeviceOwner    string
-	DeviceID       string
-	RevisionNumber int
-	CreatedAt      string
-	UpdatedAt      string
-	// Specifies IP addresses for the port thus associating the port itself with
-	// the subnets where the IP addresses are picked from
-	// FixedIPs []IP `json:"fixed_ips"`
-	// Specifies the IDs of any security groups associated with a port.
-	// SecurityGroups []string `json:"security_groups"`
-	// Identifies the list of IP addresses the port will recognize/accept
-	//AllowedAddressPairs []AddressPair `json:"allowed_address_pairs"`
-	// Tags optionally set via extensions/attributestags
-	//Tags []string `json:"tags"`
-}
-
 //// LIST FUNCTION
 
 func listOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
@@ -189,7 +184,7 @@ func listOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	plugin.Logger(ctx).Debug("ports retrieved", "count", len(allPorts))
 
 	for _, port := range allPorts {
-		d.StreamListItem(ctx, buildOpenStackPort(ctx, &port))
+		d.StreamListItem(ctx, &port)
 	}
 	return nil, nil
 }
@@ -217,27 +212,7 @@ func getOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydrat
 		return nil, err
 	}
 
-	return buildOpenStackPort(ctx, port), nil
-}
-
-func buildOpenStackPort(ctx context.Context, port *ports.Port) *openstackPort {
-	result := &openstackPort{
-		ID:             port.ID,
-		Name:           port.Name,
-		Description:    port.Description,
-		NetworkID:      port.NetworkID,
-		AdminStateUp:   port.AdminStateUp,
-		Status:         port.Status,
-		MACAddress:     port.MACAddress,
-		ProjectID:      port.ProjectID,
-		DeviceOwner:    port.DeviceOwner,
-		DeviceID:       port.DeviceID,
-		RevisionNumber: port.RevisionNumber,
-		CreatedAt:      port.CreatedAt.String(),
-		UpdatedAt:      port.UpdatedAt.String(),
-	}
-	plugin.Logger(ctx).Debug("returning port", "port", toPrettyJSON(result))
-	return result
+	return port, nil
 }
 
 func buildOpenStackPortFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) ports.ListOpts {

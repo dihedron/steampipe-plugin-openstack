@@ -2,11 +2,11 @@ package openstack
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -20,116 +20,139 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Name:        "id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The instance id",
+				Transform:   transform.FromField("ID"),
 			},
 			{
 				Name:        "name",
 				Type:        proto.ColumnType_STRING,
 				Description: "The name of the instance",
+				Transform:   transform.FromField("Name"),
 			},
 			{
 				Name:        "project_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the instance's project (aka tenant)",
+				Transform:   transform.FromField("ProjectID"),
 			},
 			{
 				Name:        "user_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the instance's user",
+				Transform:   transform.FromField("UserID"),
 			},
 			{
 				Name:        "created_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The creation time of the instance",
+				Transform:   TransformFromTimeField("CreatedAt"),
 			},
 			{
 				Name:        "launched_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The launch time of the instance",
-			},
+				Transform:   TransformFromTimeField("LaunchedAt")},
 			{
 				Name:        "updated_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The update time of the instance",
+				Transform:   TransformFromTimeField("UpdatedAt"),
 			},
 			{
 				Name:        "terminated_at",
 				Type:        proto.ColumnType_STRING,
-				Description: "The termintaion time of the instance",
+				Description: "The termination time of the instance",
+				Transform:   TransformFromTimeField("TerminatedAt"),
 			},
 			{
 				Name:        "host_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the hypervisor (host) the instance is running on",
+				Transform:   transform.FromField("HostID"),
 			},
 			{
 				Name:        "availability_zone",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the hypervisor (host) the instance is running on",
+				Transform:   transform.FromField("AvailabilityZone"),
 			},
 			{
 				Name:        "status",
 				Type:        proto.ColumnType_STRING,
 				Description: "The status of the instance",
+				Transform:   transform.FromField("Status"),
 			},
 			{
 				Name:        "progress",
 				Type:        proto.ColumnType_INT,
 				Description: "Progress information about the instance.",
+				Transform:   transform.FromField("Progress"),
 			},
 			{
 				Name:        "flavor_name",
 				Type:        proto.ColumnType_STRING,
 				Description: "The original name of the flavor used to start the instance.",
+				Transform:   transform.FromField("Flavor.OriginalName"),
 			},
 			{
 				Name:        "flavor_vcpus",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of virtual CPUs in the flavor used to start the instance.",
+				Transform:   transform.FromField("Flavor.VCPUs"),
 			},
 			{
 				Name:        "flavor_vgpus",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of virtual GPUs in the flavor used to start the instance.",
+				// Transform:   transform.FromField("Flavor.ExtraSpecs.VGPUs"),
+				Transform: TransformFromStringToInt("Flavor.ExtraSpecs.VGPUs"),
 			},
 			{
 				Name:        "flavor_cores",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of virtual CPU cores in the flavor used to start the instance.",
+				Transform:   TransformFromStringToInt("Flavor.ExtraSpecs.CPUCores"),
 			},
 			{
 				Name:        "flavor_sockets",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of CPU sockets in the flavor used to start the instance.",
+				Transform:   TransformFromStringToInt("Flavor.ExtraSpecs.CPUSockets"),
 			},
 			{
 				Name:        "flavor_ram",
 				Type:        proto.ColumnType_INT,
 				Description: "The amount of RAM in the flavor used to start the instance.",
+				Transform:   transform.FromField("Flavor.RAM"),
 			},
 			{
 				Name:        "flavor_disk",
 				Type:        proto.ColumnType_INT,
 				Description: "The size of the disk in the flavor used to start the instance.",
+				Transform:   transform.FromField("Flavor.Disk"),
 			},
 			{
 				Name:        "flavor_swap",
 				Type:        proto.ColumnType_INT,
 				Description: "The size of the swap disk in the flavor used to start the instance.",
+				Transform:   transform.FromField("Flavor.Swap"),
 			},
 			{
 				Name:        "flavor_ephemeral",
 				Type:        proto.ColumnType_INT,
 				Description: "The size of the ephemeral disk in the flavor used to start the instance.",
+				Transform:   transform.FromField("Flavor.Ephemeral"),
 			},
 			{
 				Name:        "flavor_rng_allowed",
 				Type:        proto.ColumnType_BOOL,
 				Description: "Whether the RNG is allowed on the flavor used to start the instance.",
+				Transform:   transform.FromField("Flavor.ExtraSpecs.RNGAllowed"),
 			},
 			{
 				Name:        "flavor_watchdog_action",
 				Type:        proto.ColumnType_STRING,
 				Description: "The action to take when the Nova watchdog detects the instance is not responding.",
+				Transform:   transform.FromField("Flavor.ExtraSpecs.WatchdogAction"),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -185,36 +208,7 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 	}
 }
 
-// openstackInstance is the type representing the return value of
-// list and get operations.
-type openstackInstance struct {
-	ID                   string
-	Name                 string
-	ProjectID            string
-	UserID               string
-	CreatedAt            string
-	LaunchedAt           string
-	UpdatedAt            string
-	TerminatedAt         string
-	HostID               string
-	AvailabilityZone     string
-	Status               string
-	Progress             int
-	FlavorName           string
-	FlavorVcpus          int
-	FlavorVgpus          int
-	FlavorCores          int
-	FlavorSockets        int
-	FlavorRAM            int
-	FlavorDisk           int
-	FlavorSwap           int
-	FlavorEphemeral      int
-	FlavorRngAllowed     bool
-	FlavorWatchdogAction string
-	// ...
-}
-
-//// LIST FUNCTION
+/// LIST FUNCTION
 
 func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
 
@@ -244,7 +238,7 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 	plugin.Logger(ctx).Debug("instances retrieved", "count", len(allInstances))
 
 	for _, instance := range allInstances {
-		d.StreamListItem(ctx, buildOpenStackInstance(ctx, instance))
+		d.StreamListItem(ctx, instance)
 	}
 	return nil, nil
 }
@@ -271,55 +265,7 @@ func getOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 		return nil, err
 	}
 
-	return buildOpenStackInstance(ctx, instance), nil
-}
-
-// buildOpenStackInstance pulls data from the API result and normalises,
-// flattens or otherwise transforms it into the returned struct.
-func buildOpenStackInstance(ctx context.Context, instance *apiInstance) *openstackInstance {
-	vgpus, err := strconv.Atoi(instance.Flavor.ExtraSpecs.VGPUs)
-	if err != nil {
-		plugin.Logger(ctx).Error("error converting vCPUS to integer", "error", err)
-	}
-	cores, err := strconv.Atoi(instance.Flavor.ExtraSpecs.CPUCores)
-	if err != nil {
-		plugin.Logger(ctx).Error("error converting CPU cores to integer", "error", err)
-	}
-	sockets, err := strconv.Atoi(instance.Flavor.ExtraSpecs.CPUSockets)
-	if err != nil {
-		plugin.Logger(ctx).Error("error converting CPU sockets to integer", "error", err)
-	}
-	rngAllowed, err := strconv.ParseBool(instance.Flavor.ExtraSpecs.RNGAllowed)
-	if err != nil {
-		plugin.Logger(ctx).Error("error converting RNG allowed to boolean", "error", err)
-	}
-	result := &openstackInstance{
-		ID:                   instance.ID,
-		Name:                 instance.Name,
-		ProjectID:            instance.TenantID,
-		UserID:               instance.UserID,
-		CreatedAt:            instance.CreatedAt.String(),
-		LaunchedAt:           instance.LaunchedAt.String(),
-		UpdatedAt:            instance.UpdatedAt.String(),
-		TerminatedAt:         instance.TerminatedAt.String(),
-		HostID:               instance.HostID,
-		AvailabilityZone:     instance.AvailabilityZone,
-		Status:               instance.Status,
-		Progress:             instance.Progress,
-		FlavorName:           instance.Flavor.OriginalName,
-		FlavorVcpus:          instance.Flavor.VCPUs,
-		FlavorVgpus:          vgpus,
-		FlavorCores:          cores,
-		FlavorSockets:        sockets,
-		FlavorRAM:            instance.Flavor.RAM,
-		FlavorDisk:           instance.Flavor.Disk,
-		FlavorSwap:           instance.Flavor.Swap,
-		FlavorEphemeral:      instance.Flavor.Ephemeral,
-		FlavorRngAllowed:     rngAllowed,
-		FlavorWatchdogAction: instance.Flavor.ExtraSpecs.WatchdogAction,
-	}
-	plugin.Logger(ctx).Debug("returning instance", "instance", toPrettyJSON(result))
-	return result
+	return instance, nil
 }
 
 func buildOpenStackInstanceFilter(ctx context.Context, quals plugin.KeyColumnEqualsQualMap) servers.ListOpts {
