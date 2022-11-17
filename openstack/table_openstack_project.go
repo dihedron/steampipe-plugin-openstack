@@ -121,6 +121,7 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	plugin.Logger(ctx).Debug("projects retrieved", "count", len(allProjects))
 
 	for _, project := range allProjects {
+		project := project
 		d.StreamListItem(ctx, &project)
 	}
 	return nil, nil

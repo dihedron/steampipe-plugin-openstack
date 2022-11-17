@@ -94,13 +94,13 @@ func tableOpenStackPort(_ context.Context) *plugin.Table {
 				Description: "Timestamp when the port was last updated.",
 				Transform:   TransformFromTimeField("UpdatedAt"),
 			},
-			// {
-			// 	Name:        "security_group_ids",
-			// 	Description: resourceInterfaceDescription("akas"),
-			// 	Type:        proto.ColumnType_JSON,
-			// 	Hydrate:     getEc2InstanceARN,
-			// 	Transform:   transform.FromValue().Transform(transform.EnsureStringArray),
-			// },
+			{
+				Name:        "security_group_ids",
+				Type:        proto.ColumnType_STRING,
+				Description: "The IDs of the security groups that apply to the current port.",
+				// 	Hydrate:     getEc2InstanceARN,
+				Transform: transform.FromField("SecurityGroups"), //.Transform(transform.EnsureStringArray),
+			},
 		},
 		List: &plugin.ListConfig{
 			Hydrate: listOpenStackPort,
@@ -184,6 +184,8 @@ func listOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	plugin.Logger(ctx).Debug("ports retrieved", "count", len(allPorts))
 
 	for _, port := range allPorts {
+		//plugin.Logger(ctx).Error("INFO", "port_id", port.ID, "security_group_ids", toJSON(opts), "error", err)
+		port := port
 		d.StreamListItem(ctx, &port)
 	}
 	return nil, nil

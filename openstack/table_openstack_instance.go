@@ -238,6 +238,7 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 	plugin.Logger(ctx).Debug("instances retrieved", "count", len(allInstances))
 
 	for _, instance := range allInstances {
+		instance := instance
 		d.StreamListItem(ctx, instance)
 	}
 	return nil, nil

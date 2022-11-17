@@ -121,6 +121,7 @@ func listOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	plugin.Logger(ctx).Debug("users retrieved", "count", len(allUsers))
 
 	for _, user := range allUsers {
+		user := user
 		d.StreamListItem(ctx, &user)
 	}
 	return nil, nil

@@ -189,6 +189,7 @@ func listOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 	plugin.Logger(ctx).Debug("volumes retrieved", "count", len(allVolumes))
 
 	for _, volume := range allVolumes {
+		volume := volume
 		d.StreamListItem(ctx, volume)
 	}
 	return nil, nil
