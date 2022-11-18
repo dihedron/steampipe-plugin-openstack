@@ -17,7 +17,6 @@ type openstackConfig struct {
 	DomainName                 *string `cty:"domain_name"`
 	AccessToken                *string `cty:"access_token"`
 	AppCredentialID            *string `cty:"app_credential_id"`
-	AppCredentialName          *string `cty:"app_credential_name"`
 	AppCredentialSecret        *string `cty:"app_credential_secret"`
 	AllowReauth                *bool   `cty:"allow_reauth"`
 	TraceLevel                 *string `cty:"trace_level"`
@@ -25,6 +24,8 @@ type openstackConfig struct {
 	ComputeV2Microversion      *string `cty:"compute_v2_microversion"`
 	NetworkV2Microversion      *string `cty:"network_v2_microversion"`
 	BlockStorageV3Microversion *string `cty:"blockstorage_v3_microversion"`
+	// TODO: check
+	// AppCredentialName          *string `cty:"app_credential_name"`
 }
 
 var ConfigSchema = map[string]*schema.Attribute{
@@ -61,9 +62,9 @@ var ConfigSchema = map[string]*schema.Attribute{
 	"app_credential_id": {
 		Type: schema.TypeString,
 	},
-	"app_credential_name": {
-		Type: schema.TypeString,
-	},
+	// "app_credential_name": {
+	// 	Type: schema.TypeString,
+	// },
 	"app_credential_secret": {
 		Type: schema.TypeString,
 	},

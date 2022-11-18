@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"gopkg.in/yaml.v3"
 )
 
 var ErrNotImplemented = errors.New("not implemented")
@@ -57,6 +58,12 @@ func toJSON(v any) string {
 // toPrettyJSON dumps the input object to JSON.
 func toPrettyJSON(v any) string {
 	s, _ := json.MarshalIndent(v, "", "  ")
+	return string(s)
+}
+
+// toYAML dumps the input object to YAML.
+func toYAML(v any) string {
+	s, _ := yaml.Marshal(v)
 	return string(s)
 }
 

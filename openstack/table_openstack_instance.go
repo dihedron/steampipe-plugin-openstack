@@ -32,7 +32,7 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Name:        "project_id",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the instance's project (aka tenant)",
-				Transform:   transform.FromField("ProjectID"),
+				Transform:   transform.FromField("TenantID"),
 			},
 			{
 				Name:        "user_id",
@@ -103,8 +103,7 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Name:        "flavor_vgpus",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of virtual GPUs in the flavor used to start the instance.",
-				// Transform:   transform.FromField("Flavor.ExtraSpecs.VGPUs"),
-				Transform: TransformFromStringToInt("Flavor.ExtraSpecs.VGPUs"),
+				Transform:   TransformFromStringToInt("Flavor.ExtraSpecs.VGPUs"),
 			},
 			{
 				Name:        "flavor_cores",

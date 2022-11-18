@@ -138,6 +138,7 @@ func getAuthenticatedClient(ctx context.Context, d *plugin.QueryData) (*gophercl
 		// fill the auth info from the configuration
 		auth.AllowReauth = true
 		openstackConfig := GetConfig(d.Connection)
+		plugin.Logger(ctx).Info("configuration", "info", toPrettyJSON(openstackConfig))
 		if openstackConfig.EndpointUrl != nil {
 			auth.IdentityEndpoint = *openstackConfig.EndpointUrl
 		}
@@ -169,12 +170,17 @@ func getAuthenticatedClient(ctx context.Context, d *plugin.QueryData) (*gophercl
 			auth.ApplicationCredentialID = *openstackConfig.AppCredentialID
 		}
 		if openstackConfig.AppCredentialSecret != nil {
-			auth.IdentityEndpoint = *openstackConfig.AppCredentialSecret
+			auth.ApplicationCredentialSecret = *openstackConfig.AppCredentialSecret
 		}
 		if openstackConfig.AllowReauth != nil {
 			auth.AllowReauth = *openstackConfig.AllowReauth
 		}
 	}
+
+	//
+	// IMPORTANT NOTE: when using App Credentials, it is necessary
+	// that all other fields except the endpoint URL be left blank!
+	//
 
 	client, err := openstack.AuthenticatedClient(auth)
 	if err != nil {
