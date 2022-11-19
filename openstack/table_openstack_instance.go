@@ -153,6 +153,12 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Description: "The action to take when the Nova watchdog detects the instance is not responding.",
 				Transform:   transform.FromField("Flavor.ExtraSpecs.WatchdogAction"),
 			},
+			{
+				Name:        "hypervisor_hostname",
+				Type:        proto.ColumnType_STRING,
+				Description: "The hostname of the hypervisor on which the instance is running.",
+				Transform:   transform.FromField("HypervisorHostname"),
+			},
 		},
 		List: &plugin.ListConfig{
 			Hydrate: listOpenStackInstance,
