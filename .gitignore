@@ -19,4 +19,4 @@ steampipe-plugin-openstack
 # Local integration test file 
 config/*.tf
 
-openstack/table_openstack_instance_security_group.go
+openstack/table_openstack_port_security_group.go

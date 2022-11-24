@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin/transform"
 )
 
 //// TABLE DEFINITION

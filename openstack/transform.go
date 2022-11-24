@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin/transform"
 )
 
 func TransformFromStringToInt(field string) *transform.ColumnTransforms {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 )
 
 const (

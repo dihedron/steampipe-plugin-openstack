@@ -2,11 +2,12 @@ package openstack
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -27,6 +28,12 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Type:        proto.ColumnType_STRING,
 				Description: "The name of the instance",
 				Transform:   transform.FromField("Name"),
+			},
+			{
+				Name:        "description",
+				Type:        proto.ColumnType_STRING,
+				Description: "The description of the instance",
+				Transform:   transform.FromField("Description"),
 			},
 			{
 				Name:        "project_id",
@@ -70,6 +77,12 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("HostID"),
 			},
 			{
+				Name:        "host_name",
+				Type:        proto.ColumnType_STRING,
+				Description: "The name of the host the instance is running on",
+				Transform:   transform.FromField("HostName"),
+			},
+			{
 				Name:        "availability_zone",
 				Type:        proto.ColumnType_STRING,
 				Description: "The ID of the hypervisor (host) the instance is running on",
@@ -86,6 +99,92 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Type:        proto.ColumnType_INT,
 				Description: "Progress information about the instance.",
 				Transform:   transform.FromField("Progress"),
+			},
+			{
+				Name:        "hypervisor_hostname",
+				Type:        proto.ColumnType_STRING,
+				Description: "The hostname of the hypervisor on which the instance is running.",
+				Transform:   transform.FromField("HypervisorHostname"),
+			},
+			{
+				Name:        "tags",
+				Type:        proto.ColumnType_JSON,
+				Description: "The tags associated with the virtual machine.",
+				Transform:   transform.FromField("Tags"),
+			},
+			{
+				Name:        "user_data",
+				Type:        proto.ColumnType_STRING,
+				Description: "The user data associated with the virtual machine.",
+				Transform:   transform.FromField("UserData"),
+			},
+			{
+				Name:        "disk_config",
+				Type:        proto.ColumnType_STRING,
+				Description: "The instance disc configuration.",
+				Transform:   transform.FromField("DiskConfig"),
+			},
+			{
+				Name:        "instance_name",
+				Type:        proto.ColumnType_STRING,
+				Description: "The instance name.",
+				Transform:   transform.FromField("InstanceName"),
+			},
+			{
+				Name:        "kernel_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The ID of the virtual machine kernel.",
+				Transform:   transform.FromField("KernelID"),
+			},
+			{
+				Name:        "launch_index",
+				Type:        proto.ColumnType_STRING,
+				Description: "The instance launch index.",
+				Transform:   transform.FromField("LaunchIndex"),
+			},
+			{
+				Name:        "ram_disk_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The ID of the instance.",
+				Transform:   transform.FromField("RAMDiskID"),
+			},
+			{
+				Name:        "reservation_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The instance reservation ID.",
+				Transform:   transform.FromField("ReservationID"),
+			},
+			{
+				Name:        "root_device_name",
+				Type:        proto.ColumnType_STRING,
+				Description: "The instance root device name.",
+				Transform:   transform.FromField("RootDeviceName"),
+			},
+			{
+				Name:        "power_state_id",
+				Type:        proto.ColumnType_INT,
+				Description: "The instance power state.",
+				Transform:   transform.FromField("PowerState"),
+			},
+			{
+				Name:        "power_state_name",
+				Type:        proto.ColumnType_INT,
+				Description: "The instance power state.",
+				Transform: transform.FromField("PowerState").Transform(func(ctx context.Context, d *transform.TransformData) (interface{}, error) {
+					plugin.Logger(ctx).Debug("transforming power state value", "type", fmt.Sprintf("%v -> %T", d.Value, d.Value))
+					// if int(d.Value >= 0 && d.Value <
+					// return []string{""}[d.Value, nilswitch d.Value {
+
+					// }
+					// value := types.SafeString(d.Value)
+					return d.Value, nil
+				}),
+			},
+			{
+				Name:        "config_drive",
+				Type:        proto.ColumnType_STRING,
+				Description: "The instance config drive.",
+				Transform:   transform.FromField("ConfigDrive"),
 			},
 			{
 				Name:        "flavor_name",
@@ -152,12 +251,6 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Type:        proto.ColumnType_STRING,
 				Description: "The action to take when the Nova watchdog detects the instance is not responding.",
 				Transform:   transform.FromField("Flavor.ExtraSpecs.WatchdogAction"),
-			},
-			{
-				Name:        "hypervisor_hostname",
-				Type:        proto.ColumnType_STRING,
-				Description: "The hostname of the hypervisor on which the instance is running.",
-				Transform:   transform.FromField("HypervisorHostname"),
 			},
 		},
 		List: &plugin.ListConfig{
