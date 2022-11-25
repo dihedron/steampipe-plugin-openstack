@@ -2,7 +2,6 @@ package openstack
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
@@ -163,21 +162,29 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 			{
 				Name:        "power_state_id",
 				Type:        proto.ColumnType_INT,
-				Description: "The instance power state.",
+				Description: "The instance power state (as an integer).",
 				Transform:   transform.FromField("PowerState"),
 			},
 			{
 				Name:        "power_state_name",
-				Type:        proto.ColumnType_INT,
-				Description: "The instance power state.",
+				Type:        proto.ColumnType_STRING,
+				Description: "The instance power state as a string.",
 				Transform: transform.FromField("PowerState").Transform(func(ctx context.Context, d *transform.TransformData) (interface{}, error) {
-					plugin.Logger(ctx).Debug("transforming power state value", "type", fmt.Sprintf("%v -> %T", d.Value, d.Value))
-					// if int(d.Value >= 0 && d.Value <
-					// return []string{""}[d.Value, nilswitch d.Value {
-
-					// }
-					// value := types.SafeString(d.Value)
-					return d.Value, nil
+					switch d.Value.(int) {
+					case 0:
+						return "NOSTATE", nil
+					case 1:
+						return "RUNNING", nil
+					case 3:
+						return "PAUSED", nil
+					case 4:
+						return "SHUTDOWN", nil
+					case 6:
+						return "CRASHED", nil
+					case 7:
+						return "SUSPENDED", nil
+					}
+					return "", nil
 				}),
 			},
 			{
