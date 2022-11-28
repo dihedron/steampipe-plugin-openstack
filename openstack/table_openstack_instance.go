@@ -267,8 +267,8 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Description: "The Glance image used to start the instance.",
 				Transform: transform.FromField("Image").Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
 					if d.Value != nil {
-						if image, ok := d.Value.(apiImage); ok {
-							return image.ID, nil
+						if value, ok := d.Value.(map[string]any); ok {
+							return value["id"], nil
 						}
 					}
 					return nil, nil
@@ -461,20 +461,20 @@ func buildOpenStackInstanceFilter(ctx context.Context, quals plugin.KeyColumnEqu
 // This is also why there is an ExtrctInto function that allows you to pass in
 // an arbitrary struct to marshal the responsa data into.
 type apiInstance struct {
-	ID           string   `json:"id"`
-	TenantID     string   `json:"tenant_id"`
-	UserID       string   `json:"user_id"`
-	Name         string   `json:"name"`
-	CreatedAt    Time     `json:"created"`
-	LaunchedAt   Time     `json:"OS-SRV-USG:launched_at"`
-	UpdatedAt    Time     `json:"updated"`
-	TerminatedAt Time     `json:"OS-SRV-USG:terminated_at"`
-	HostID       string   `json:"hostid"`
-	Status       string   `json:"status"`
-	Progress     int      `json:"progress"`
-	AccessIPv4   string   `json:"accessIPv4"`
-	AccessIPv6   string   `json:"accessIPv6"`
-	Image        apiImage `json:"image"`
+	ID           string `json:"id"`
+	TenantID     string `json:"tenant_id"`
+	UserID       string `json:"user_id"`
+	Name         string `json:"name"`
+	CreatedAt    Time   `json:"created"`
+	LaunchedAt   Time   `json:"OS-SRV-USG:launched_at"`
+	UpdatedAt    Time   `json:"updated"`
+	TerminatedAt Time   `json:"OS-SRV-USG:terminated_at"`
+	HostID       string `json:"hostid"`
+	Status       string `json:"status"`
+	Progress     int    `json:"progress"`
+	AccessIPv4   string `json:"accessIPv4"`
+	AccessIPv6   string `json:"accessIPv6"`
+	Image        any    `json:"image"`
 	Flavor       struct {
 		Disk       int `json:"disk"`
 		Ephemeral  int `json:"ephemeral"`
@@ -528,12 +528,4 @@ type apiInstance struct {
 	ConfigDrive        string    `json:"config_drive"`
 	Description        string    `json:"description"`
 	//	TaskState          interface{}              `json:"OS-EXT-STS:task_state"`
-}
-
-type apiImage struct {
-	ID    string `json:"id"`
-	Links []struct {
-		Href string `json:"href"`
-		Rel  string `json:"rel"`
-	} `json:"links"`
 }
