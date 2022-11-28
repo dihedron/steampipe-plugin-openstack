@@ -3,6 +3,7 @@ package openstack
 import (
 	"context"
 
+	"github.com/dihedron/steampipe-plugin-utils/utils"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/ports"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -86,20 +87,20 @@ func tableOpenStackPort(_ context.Context) *plugin.Table {
 				Name:        "created_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "Timestamp when the port was created.",
-				Transform:   TransformFromTimeField("CreatedAt"),
+				Transform:   transform.FromField("CreatedAt").Transform(ToTime),
 			},
 			{
 				Name:        "updated_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "Timestamp when the port was last updated.",
-				Transform:   TransformFromTimeField("UpdatedAt"),
+				Transform:   transform.FromField("UpdatedAt").Transform(ToTime),
 			},
 			{
 				Name:        "security_group_ids",
 				Type:        proto.ColumnType_STRING,
 				Description: "The IDs of the security groups that apply to the current port.",
 				// 	Hydrate:     getEc2InstanceARN,
-				Transform: transform.FromField("SecurityGroups"), //.Transform(transform.EnsureStringArray),
+				Transform: transform.FromField("SecurityGroups").Transform(transform.EnsureStringArray),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -161,7 +162,7 @@ func listOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 
 	setLogLevel(ctx, d)
 
-	plugin.Logger(ctx).Debug("retrieving openstack ports list", "query data", toPrettyJSON(d))
+	plugin.Logger(ctx).Debug("retrieving openstack ports list", "query data", utils.ToPrettyJSON(d))
 
 	client, err := getServiceClient(ctx, d, NetworkV2)
 	if err != nil {
@@ -173,7 +174,7 @@ func listOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 
 	allPages, err := ports.List(client, opts).AllPages()
 	if err != nil {
-		plugin.Logger(ctx).Error("error listing ports with options", "options", toPrettyJSON(opts), "error", err)
+		plugin.Logger(ctx).Error("error listing ports with options", "options", utils.ToPrettyJSON(opts), "error", err)
 		return nil, err
 	}
 	allPorts, err := ports.ExtractPorts(allPages)
@@ -184,7 +185,10 @@ func listOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	plugin.Logger(ctx).Debug("ports retrieved", "count", len(allPorts))
 
 	for _, port := range allPorts {
-		//plugin.Logger(ctx).Error("INFO", "port_id", port.ID, "security_group_ids", toJSON(opts), "error", err)
+		if ctx.Err() != nil {
+			plugin.Logger(ctx).Debug("context done, exit")
+			break
+		}
 		port := port
 		d.StreamListItem(ctx, &port)
 	}
@@ -233,7 +237,7 @@ func buildOpenStackPortFilter(ctx context.Context, quals plugin.KeyColumnEqualsQ
 		opts.Description = value.GetStringValue()
 	}
 	if value, ok := quals["admin_state_up"]; ok {
-		opts.AdminStateUp = pointerTo(value.GetBoolValue())
+		opts.AdminStateUp = utils.PointerTo(value.GetBoolValue())
 	}
 	if value, ok := quals["network_id"]; ok {
 		opts.NetworkID = value.GetStringValue()
@@ -250,6 +254,6 @@ func buildOpenStackPortFilter(ctx context.Context, quals plugin.KeyColumnEqualsQ
 	if value, ok := quals["mac_address"]; ok {
 		opts.MACAddress = value.GetStringValue()
 	}
-	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
+	plugin.Logger(ctx).Debug("returning", "filter", utils.ToPrettyJSON(opts))
 	return opts
 }

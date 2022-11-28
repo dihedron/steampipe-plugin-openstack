@@ -3,6 +3,7 @@ package openstack
 import (
 	"context"
 
+	"github.com/dihedron/steampipe-plugin-utils/utils"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/users"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -56,7 +57,7 @@ func tableOpenStackUser(_ context.Context) *plugin.Table {
 				Name:        "password_expires_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The timestamp when the user's password expires.",
-				Transform:   TransformFromTimeField("PasswordExpiresAt"),
+				Transform:   transform.FromField("PasswordExpiresAt").Transform(ToTime),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -98,7 +99,7 @@ func listOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 
 	setLogLevel(ctx, d)
 
-	plugin.Logger(ctx).Debug("retrieving openstack users list", "query data", toPrettyJSON(d))
+	plugin.Logger(ctx).Debug("retrieving openstack users list", "query data", utils.ToPrettyJSON(d))
 
 	client, err := getServiceClient(ctx, d, IdentityV3)
 	if err != nil {
@@ -110,7 +111,7 @@ func listOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 
 	allPages, err := users.List(client, opts).AllPages()
 	if err != nil {
-		plugin.Logger(ctx).Error("error listing users with options", "options", toPrettyJSON(opts), "error", err)
+		plugin.Logger(ctx).Error("error listing users with options", "options", utils.ToPrettyJSON(opts), "error", err)
 		return nil, err
 	}
 	allUsers, err := users.ExtractUsers(allPages)
@@ -121,6 +122,10 @@ func listOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	plugin.Logger(ctx).Debug("users retrieved", "count", len(allUsers))
 
 	for _, user := range allUsers {
+		if ctx.Err() != nil {
+			plugin.Logger(ctx).Debug("context done, exit")
+			break
+		}
 		user := user
 		d.StreamListItem(ctx, &user)
 	}
@@ -165,11 +170,11 @@ func buildOpenStackUserFilter(ctx context.Context, quals plugin.KeyColumnEqualsQ
 		opts.DomainID = value.GetStringValue()
 	}
 	if value, ok := quals["enabled"]; ok {
-		opts.Enabled = pointerTo(value.GetBoolValue())
+		opts.Enabled = utils.PointerTo(value.GetBoolValue())
 	}
 	if value, ok := quals["password_expires_at"]; ok {
 		opts.PasswordExpiresAt = value.GetStringValue()
 	}
-	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
+	plugin.Logger(ctx).Debug("returning", "filter", utils.ToPrettyJSON(opts))
 	return opts
 }

@@ -3,6 +3,7 @@ package openstack
 import (
 	"context"
 
+	"github.com/dihedron/steampipe-plugin-utils/utils"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -122,13 +123,13 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 				Name:        "created_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "Timestamp when the volume was created.",
-				Transform:   TransformFromTimeField("CreatedAt"),
+				Transform:   transform.FromField("CreatedAt").Transform(ToTime),
 			},
 			{
 				Name:        "updated_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The date when this volume was last updated.",
-				Transform:   TransformFromTimeField("UpdatedAt"),
+				Transform:   transform.FromField("UpdatedAt").Transform(ToTime),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -165,7 +166,7 @@ func listOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 
 	setLogLevel(ctx, d)
 
-	plugin.Logger(ctx).Debug("retrieving openstack volumes list", "query data", toPrettyJSON(d))
+	plugin.Logger(ctx).Debug("retrieving openstack volumes list", "query data", utils.ToPrettyJSON(d))
 
 	client, err := getServiceClient(ctx, d, BlockStorageV3)
 	if err != nil {
@@ -177,7 +178,7 @@ func listOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 
 	allPages, err := volumes.List(client, opts).AllPages()
 	if err != nil {
-		plugin.Logger(ctx).Error("error listing volumes with options", "options", toPrettyJSON(opts), "error", err)
+		plugin.Logger(ctx).Error("error listing volumes with options", "options", utils.ToPrettyJSON(opts), "error", err)
 		return nil, err
 	}
 	allVolumes := []*apiVolume{}
@@ -189,6 +190,10 @@ func listOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 	plugin.Logger(ctx).Debug("volumes retrieved", "count", len(allVolumes))
 
 	for _, volume := range allVolumes {
+		if ctx.Err() != nil {
+			plugin.Logger(ctx).Debug("context done, exit")
+			break
+		}
 		volume := volume
 		d.StreamListItem(ctx, volume)
 	}
@@ -211,7 +216,7 @@ func getOpenStackVolume(ctx context.Context, d *plugin.QueryData, h *plugin.Hydr
 	}
 
 	result := volumes.Get(client, id)
-	//plugin.Logger(ctx).Debug("request run", "result", toPrettyJSON(result))
+	//plugin.Logger(ctx).Debug("request run", "result", utils.ToPrettyJSON(result))
 
 	volume := &apiVolume{}
 	err = result.ExtractInto(volume)
@@ -236,7 +241,7 @@ func buildOpenStackVolumeFilter(ctx context.Context, quals plugin.KeyColumnEqual
 		opts.TenantID = value.GetStringValue()
 	}
 	// TODO: add metadata
-	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
+	plugin.Logger(ctx).Debug("returning", "filter", utils.ToPrettyJSON(opts))
 	return opts
 }
 

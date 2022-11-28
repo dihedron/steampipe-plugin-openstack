@@ -1,11 +1,13 @@
 package openstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 type Time time.Time
@@ -66,4 +68,28 @@ func (t *Time) IsZero() bool {
 		return true
 	}
 	return time.Time(*t).IsZero()
+}
+
+func ToTime(ctx context.Context, d *transform.TransformData) (any, error) {
+	var err error
+	switch t := d.Value.(type) {
+	case *Time:
+		if t == nil || t.IsZero() {
+			return nil, nil
+		}
+		return t.String(), nil
+	case Time:
+		if t.IsZero() {
+			return nil, nil
+		}
+		return t.String(), nil
+	case time.Time:
+		if t.IsZero() {
+			return nil, nil
+		}
+		return t.String(), nil
+	default:
+		err = fmt.Errorf("invalid type: %T", d.Value)
+	}
+	return nil, err
 }

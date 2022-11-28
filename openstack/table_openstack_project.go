@@ -3,6 +3,7 @@ package openstack
 import (
 	"context"
 
+	"github.com/dihedron/steampipe-plugin-utils/utils"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/projects"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -98,7 +99,7 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 
 	setLogLevel(ctx, d)
 
-	plugin.Logger(ctx).Debug("retrieving openstack projects list", "query data", toPrettyJSON(d))
+	plugin.Logger(ctx).Debug("retrieving openstack projects list", "query data", utils.ToPrettyJSON(d))
 
 	client, err := getServiceClient(ctx, d, IdentityV3)
 	if err != nil {
@@ -110,7 +111,7 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 
 	allPages, err := projects.List(client, opts).AllPages()
 	if err != nil {
-		plugin.Logger(ctx).Error("error listing projects with options", "options", toPrettyJSON(opts), "error", err)
+		plugin.Logger(ctx).Error("error listing projects with options", "options", utils.ToPrettyJSON(opts), "error", err)
 		return nil, err
 	}
 	allProjects, err := projects.ExtractProjects(allPages)
@@ -121,6 +122,10 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	plugin.Logger(ctx).Debug("projects retrieved", "count", len(allProjects))
 
 	for _, project := range allProjects {
+		if ctx.Err() != nil {
+			plugin.Logger(ctx).Debug("context done, exit")
+			break
+		}
 		project := project
 		d.StreamListItem(ctx, &project)
 	}
@@ -159,17 +164,17 @@ func buildOpenStackProjectFilter(ctx context.Context, quals plugin.KeyColumnEqua
 		opts.Name = value.GetStringValue()
 	}
 	if value, ok := quals["is_domain"]; ok {
-		opts.IsDomain = pointerTo(value.GetBoolValue())
+		opts.IsDomain = utils.PointerTo(value.GetBoolValue())
 	}
 	if value, ok := quals["domain_id"]; ok {
 		opts.DomainID = value.GetStringValue()
 	}
 	if value, ok := quals["enabled"]; ok {
-		opts.Enabled = pointerTo(value.GetBoolValue())
+		opts.Enabled = utils.PointerTo(value.GetBoolValue())
 	}
 	if value, ok := quals["parent_id"]; ok {
 		opts.ParentID = value.GetStringValue()
 	}
-	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
+	plugin.Logger(ctx).Debug("returning", "filter", utils.ToPrettyJSON(opts))
 	return opts
 }

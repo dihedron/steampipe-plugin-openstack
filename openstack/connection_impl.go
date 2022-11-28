@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dihedron/steampipe-plugin-utils/utils"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -138,7 +139,7 @@ func getAuthenticatedClient(ctx context.Context, d *plugin.QueryData) (*gophercl
 		// fill the auth info from the configuration
 		auth.AllowReauth = true
 		openstackConfig := GetConfig(d.Connection)
-		plugin.Logger(ctx).Info("configuration", "info", toPrettyJSON(openstackConfig))
+		plugin.Logger(ctx).Info("configuration", "info", utils.ToPrettyJSON(openstackConfig))
 		if openstackConfig.EndpointUrl != nil {
 			auth.IdentityEndpoint = *openstackConfig.EndpointUrl
 		}

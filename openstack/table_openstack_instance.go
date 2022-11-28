@@ -3,6 +3,7 @@ package openstack
 import (
 	"context"
 
+	"github.com/dihedron/steampipe-plugin-utils/utils"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -50,24 +51,25 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Name:        "created_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The creation time of the instance",
-				Transform:   TransformFromTimeField("CreatedAt"),
+				Transform:   transform.FromField("CreatedAt").Transform(ToTime),
 			},
 			{
 				Name:        "launched_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The launch time of the instance",
-				Transform:   TransformFromTimeField("LaunchedAt")},
+				Transform:   transform.FromField("LaunchedAt").Transform(ToTime),
+			},
 			{
 				Name:        "updated_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The update time of the instance",
-				Transform:   TransformFromTimeField("UpdatedAt"),
+				Transform:   transform.FromField("UpdatedAt").Transform(ToTime),
 			},
 			{
 				Name:        "terminated_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "The termination time of the instance",
-				Transform:   TransformFromTimeField("TerminatedAt"),
+				Transform:   transform.FromField("TerminatedAt").Transform(ToTime),
 			},
 			{
 				Name:        "host_id",
@@ -209,19 +211,19 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Name:        "flavor_vgpus",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of virtual GPUs in the flavor used to start the instance.",
-				Transform:   TransformFromStringToInt("Flavor.ExtraSpecs.VGPUs"),
+				Transform:   transform.FromField("Flavor.ExtraSpecs.VGPUs").Transform(transform.NullIfZeroValue).Transform(transform.ToInt),
 			},
 			{
 				Name:        "flavor_cores",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of virtual CPU cores in the flavor used to start the instance.",
-				Transform:   TransformFromStringToInt("Flavor.ExtraSpecs.CPUCores"),
+				Transform:   transform.FromField("Flavor.ExtraSpecs.CPUCores").Transform(transform.NullIfZeroValue).Transform(transform.ToInt),
 			},
 			{
 				Name:        "flavor_sockets",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of CPU sockets in the flavor used to start the instance.",
-				Transform:   TransformFromStringToInt("Flavor.ExtraSpecs.CPUSockets"),
+				Transform:   transform.FromField("Flavor.ExtraSpecs.CPUSockets").Transform(transform.NullIfZeroValue).Transform(transform.ToInt),
 			},
 			{
 				Name:        "flavor_ram",
@@ -258,6 +260,36 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Type:        proto.ColumnType_STRING,
 				Description: "The action to take when the Nova watchdog detects the instance is not responding.",
 				Transform:   transform.FromField("Flavor.ExtraSpecs.WatchdogAction"),
+			},
+			{
+				Name:        "image_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The Glance image used to start the instance.",
+				Transform: transform.FromField("Image").Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if image, ok := d.Value.(apiImage); ok {
+							return image.ID, nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "attached_volume_ids",
+				Type:        proto.ColumnType_JSON,
+				Description: "The volumes attached to the instance.",
+				Transform: transform.FromField("AttachedVolumes").Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if volumes, ok := d.Value.([]servers.AttachedVolume); ok {
+							result := []string{}
+							for _, volume := range volumes {
+								result = append(result, volume.ID)
+							}
+							return result, nil
+						}
+					}
+					return nil, nil
+				}),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -319,7 +351,7 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 
 	setLogLevel(ctx, d)
 
-	plugin.Logger(ctx).Debug("retrieving openstack instance list", "query data", toPrettyJSON(d))
+	plugin.Logger(ctx).Debug("retrieving openstack instance list", "query data", utils.ToPrettyJSON(d))
 
 	client, err := getServiceClient(ctx, d, ComputeV2)
 	if err != nil {
@@ -331,7 +363,7 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 
 	allPages, err := servers.List(client, opts).AllPages()
 	if err != nil {
-		plugin.Logger(ctx).Error("error listing instances with options", "options", toPrettyJSON(opts), "error", err)
+		plugin.Logger(ctx).Error("error listing instances with options", "options", utils.ToPrettyJSON(opts), "error", err)
 		return nil, err
 	}
 	allInstances := []*apiInstance{}
@@ -343,7 +375,12 @@ func listOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.H
 	plugin.Logger(ctx).Debug("instances retrieved", "count", len(allInstances))
 
 	for _, instance := range allInstances {
+		if ctx.Err() != nil {
+			plugin.Logger(ctx).Debug("context done, exit")
+			break
+		}
 		instance := instance
+		plugin.Logger(ctx).Debug("streaming instance", "data", utils.ToPrettyJSON(instance))
 		d.StreamListItem(ctx, instance)
 	}
 	return nil, nil
@@ -365,12 +402,15 @@ func getOpenStackInstance(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	}
 
 	result := servers.Get(client, id)
+	plugin.Logger(ctx).Debug("API call complete", "result", utils.ToPrettyJSON(result))
+
 	instance := &apiInstance{}
 	if err := result.ExtractInto(instance); err != nil {
 		plugin.Logger(ctx).Error("error retrieving instance", "error", err)
 		return nil, err
 	}
 
+	plugin.Logger(ctx).Debug("returning instance", "data", utils.ToPrettyJSON(instance))
 	return instance, nil
 }
 
@@ -409,7 +449,7 @@ func buildOpenStackInstanceFilter(ctx context.Context, quals plugin.KeyColumnEqu
 	if value, ok := quals["availability_zone"]; ok {
 		opts.AvailabilityZone = value.GetStringValue()
 	}
-	plugin.Logger(ctx).Debug("returning", "filter", toPrettyJSON(opts))
+	plugin.Logger(ctx).Debug("returning", "filter", utils.ToPrettyJSON(opts))
 	return opts
 }
 
@@ -421,20 +461,20 @@ func buildOpenStackInstanceFilter(ctx context.Context, quals plugin.KeyColumnEqu
 // This is also why there is an ExtrctInto function that allows you to pass in
 // an arbitrary struct to marshal the responsa data into.
 type apiInstance struct {
-	ID           string                 `json:"id"`
-	TenantID     string                 `json:"tenant_id"`
-	UserID       string                 `json:"user_id"`
-	Name         string                 `json:"name"`
-	CreatedAt    Time                   `json:"created"`
-	LaunchedAt   Time                   `json:"OS-SRV-USG:launched_at"`
-	UpdatedAt    Time                   `json:"updated"`
-	TerminatedAt Time                   `json:"OS-SRV-USG:terminated_at"`
-	HostID       string                 `json:"hostid"`
-	Status       string                 `json:"status"`
-	Progress     int                    `json:"progress"`
-	AccessIPv4   string                 `json:"accessIPv4"`
-	AccessIPv6   string                 `json:"accessIPv6"`
-	Image        map[string]interface{} `json:"-"`
+	ID           string   `json:"id"`
+	TenantID     string   `json:"tenant_id"`
+	UserID       string   `json:"user_id"`
+	Name         string   `json:"name"`
+	CreatedAt    Time     `json:"created"`
+	LaunchedAt   Time     `json:"OS-SRV-USG:launched_at"`
+	UpdatedAt    Time     `json:"updated"`
+	TerminatedAt Time     `json:"OS-SRV-USG:terminated_at"`
+	HostID       string   `json:"hostid"`
+	Status       string   `json:"status"`
+	Progress     int      `json:"progress"`
+	AccessIPv4   string   `json:"accessIPv4"`
+	AccessIPv6   string   `json:"accessIPv6"`
+	Image        apiImage `json:"image"`
 	Flavor       struct {
 		Disk       int `json:"disk"`
 		Ephemeral  int `json:"ephemeral"`
@@ -467,7 +507,7 @@ type apiInstance struct {
 	SecurityGroups []struct {
 		Name string `json:"name"`
 	} `json:"security_groups"`
-	// AttachedVolumes    []servers.AttachedVolume `json:"os-extended-volumes:volumes_attached"`
+	AttachedVolumes []servers.AttachedVolume `json:"os-extended-volumes:volumes_attached"`
 	// Fault              servers.Fault            `json:"fault"`
 	Tags               *[]string `json:"tags"`
 	ServerGroups       *[]string `json:"server_groups"`
@@ -488,4 +528,12 @@ type apiInstance struct {
 	ConfigDrive        string    `json:"config_drive"`
 	Description        string    `json:"description"`
 	//	TaskState          interface{}              `json:"OS-EXT-STS:task_state"`
+}
+
+type apiImage struct {
+	ID    string `json:"id"`
+	Links []struct {
+		Href string `json:"href"`
+		Rel  string `json:"rel"`
+	} `json:"links"`
 }

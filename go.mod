@@ -3,11 +3,11 @@ module github.com/dihedron/steampipe-plugin-openstack
 go 1.19
 
 require (
+	github.com/dihedron/steampipe-plugin-utils v0.0.0-20221128120558-3af58a99f02c
 	github.com/gophercloud/gophercloud v1.1.0
 	github.com/hashicorp/go-hclog v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.0.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -111,5 +111,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apimachinery v0.23.5 // indirect
 )
