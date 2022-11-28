@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/ports"
-	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -169,7 +169,7 @@ func listOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 		return nil, err
 	}
 
-	opts := buildOpenStackPortFilter(ctx, d.KeyColumnQuals)
+	opts := buildOpenStackPortFilter(ctx, d.EqualsQuals)
 
 	allPages, err := ports.List(client, opts).AllPages()
 	if err != nil {
@@ -197,7 +197,7 @@ func getOpenStackPort(ctx context.Context, d *plugin.QueryData, h *plugin.Hydrat
 
 	setLogLevel(ctx, d)
 
-	id := d.KeyColumnQuals["id"].GetStringValue()
+	id := d.EqualsQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack port", "id", id)
 
 	client, err := getServiceClient(ctx, d, NetworkV2)

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/users"
-	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -106,7 +106,7 @@ func listOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 		return nil, err
 	}
 
-	opts := buildOpenStackUserFilter(ctx, d.KeyColumnQuals)
+	opts := buildOpenStackUserFilter(ctx, d.EqualsQuals)
 
 	allPages, err := users.List(client, opts).AllPages()
 	if err != nil {
@@ -133,7 +133,7 @@ func getOpenStackUser(ctx context.Context, d *plugin.QueryData, h *plugin.Hydrat
 
 	setLogLevel(ctx, d)
 
-	id := d.KeyColumnQuals["id"].GetStringValue()
+	id := d.EqualsQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack user", "id", id)
 
 	client, err := getServiceClient(ctx, d, IdentityV3)

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/projects"
-	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 //// TABLE DEFINITION
@@ -106,7 +106,7 @@ func listOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 		return nil, err
 	}
 
-	opts := buildOpenStackProjectFilter(ctx, d.KeyColumnQuals)
+	opts := buildOpenStackProjectFilter(ctx, d.EqualsQuals)
 
 	allPages, err := projects.List(client, opts).AllPages()
 	if err != nil {
@@ -133,7 +133,7 @@ func getOpenStackProject(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 
 	setLogLevel(ctx, d)
 
-	id := d.KeyColumnQuals["id"].GetStringValue()
+	id := d.EqualsQuals["id"].GetStringValue()
 	plugin.Logger(ctx).Debug("retrieving openstack project", "id", id)
 
 	client, err := getServiceClient(ctx, d, IdentityV3)
