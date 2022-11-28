@@ -24,25 +24,6 @@ func tableOpenStackAttachment(_ context.Context) *plugin.Table {
 				Description: "The unique id of the attachment.",
 				Transform:   transform.FromField("ID"),
 			},
-
-			// ConnectionInfo struct {
-			// 	AccessMode       string   `json:"access_mode"`
-			// 	AttachmentID     string   `json:"attachment_id"`
-			// 	AuthEnabled      bool     `json:"auth_enabled"`
-			// 	AuthUsername     string   `json:"auth_username"`
-			// 	ClusterName      string   `json:"cluster_name"`
-			// 	Discard          bool     `json:"discard"`
-			// 	DriverVolumeType string   `json:"driver_volume_type"`
-			// 	Encrypted        bool     `json:"encrypted"`
-			// 	Hosts            []string `json:"hosts"`
-			// 	Keyring          string   `json:"keyring"`
-			// 	Name             string   `json:"name"`
-			// 	Ports            []string `json:"ports"`
-			// 	SecretType       string   `json:"secret_type"`
-			// 	SecretUUID       string   `json:"secret_uuid"`
-			// 	VolumeID         string   `json:"volume_id"`
-			// } `json:"connection_info"`
-
 			{
 				Name:        "attached_at",
 				Type:        proto.ColumnType_STRING,

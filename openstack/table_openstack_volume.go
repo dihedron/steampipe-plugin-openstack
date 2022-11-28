@@ -2,6 +2,8 @@ package openstack
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	"github.com/dihedron/steampipe-plugin-utils/utils"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
@@ -120,6 +122,12 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("BackupID"),
 			},
 			{
+				Name:        "group_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The group ID of the volume; this value is available starting from microversion 3.47.",
+				Transform:   transform.FromField("GroupID"),
+			},
+			{
 				Name:        "created_at",
 				Type:        proto.ColumnType_STRING,
 				Description: "Timestamp when the volume was created.",
@@ -130,6 +138,206 @@ func tableOpenStackVolume(_ context.Context) *plugin.Table {
 				Type:        proto.ColumnType_STRING,
 				Description: "The date when this volume was last updated.",
 				Transform:   transform.FromField("UpdatedAt").Transform(ToTime),
+			},
+			{
+				Name:        "image_id",
+				Type:        proto.ColumnType_STRING,
+				Description: "The id of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["image_id"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_name",
+				Type:        proto.ColumnType_STRING,
+				Description: "The name of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["image_name"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_size",
+				Type:        proto.ColumnType_INT,
+				Description: "The size of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["size"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_architecture",
+				Type:        proto.ColumnType_STRING,
+				Description: "The architecture of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["architecture"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_checksum",
+				Type:        proto.ColumnType_STRING,
+				Description: "The checksum of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["checksum"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_container_format",
+				Type:        proto.ColumnType_STRING,
+				Description: "The container format of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["container_format"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_disk_format",
+				Type:        proto.ColumnType_STRING,
+				Description: "The disk format of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["disk_format"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_hw_disk_bus",
+				Type:        proto.ColumnType_STRING,
+				Description: "The hardware disk bus of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["hw_disk_bus"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_hw_qemu_guest_agent",
+				Type:        proto.ColumnType_BOOL,
+				Description: "Whether the hardware QEMU guest agent is installe",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return strings.ToLower(value["hw_qemu_guest_agent"]) == "yes", nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_hw_rng_model",
+				Type:        proto.ColumnType_STRING,
+				Description: "The hardware random number generator of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["hw_rng_model"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_hw_scsi_model",
+				Type:        proto.ColumnType_STRING,
+				Description: "The hardware SCSi model of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["hw_scsi_model"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_min_disk",
+				Type:        proto.ColumnType_INT,
+				Description: "The minimum disk size (in Gb) of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							if value["image_min_disk"] == "" {
+								return 0, nil
+							}
+							return strconv.Atoi(value["image_min_disk"])
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_min_ram",
+				Type:        proto.ColumnType_INT,
+				Description: "The minimum RAM size of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							if value["min_ram"] == "" {
+								return 0, nil
+							}
+							return strconv.Atoi(value["min_ram"])
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "image_os_distro",
+				Type:        proto.ColumnType_STRING,
+				Description: "The operating system distribution of the image from which this volume was created, if any.",
+				Transform: transform.FromField("VolumeImageMetadata").Transform(transform.NullIfZeroValue).Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					if d.Value != nil {
+						if value, ok := d.Value.(map[string]string); ok {
+							return value["os_distro"], nil
+						}
+					}
+					return nil, nil
+				}),
+			},
+			{
+				Name:        "metadata",
+				Type:        proto.ColumnType_JSON,
+				Description: "The volume metadata.",
+				Transform:   transform.FromField("Metadata"),
+			},
+			{
+				Name:        "volume_image_metadata",
+				Type:        proto.ColumnType_JSON,
+				Description: "The volume image metadata.",
+				Transform:   transform.FromField("VolumeImageMetadata"),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -246,39 +454,59 @@ func buildOpenStackVolumeFilter(ctx context.Context, quals plugin.KeyColumnEqual
 }
 
 type apiVolume struct {
-	Attachments        []interface{} `json:"attachments"`
-	AvailabilityZone   string        `json:"availability_zone"`
-	Bootable           string        `json:"bootable"`
-	ConsistencyGroupID string        `json:"consistencygroup_id"`
-	CreatedAt          Time          `json:"created_at"`
-	Description        string        `json:"description"`
-	Encrypted          bool          `json:"encrypted"`
-	GroupID            string        `json:"group_id"`
-	BackupID           string        `json:"backup_id"`
-	ID                 string        `json:"id"`
-	Links              []struct {
-		Href string `json:"href"`
-		Rel  string `json:"rel"`
-	} `json:"links"`
-	Metadata struct {
-		Readonly string `json:"readonly"`
-	} `json:"metadata"`
-	MigrationStatus           string `json:"migration_status"`
-	Multiattach               bool   `json:"multiattach"`
-	Name                      string `json:"name"`
+	// Unique identifier for the volume.
+	ID string `json:"id"`
+	// Current status of the volume.
+	Status string `json:"status"`
+	// Size of the volume in GB.
+	Size int `json:"size"`
+	// AvailabilityZone is which availability zone the volume is in.
+	AvailabilityZone string `json:"availability_zone"`
+	// The date when this volume was created.
+	CreatedAt Time `json:"created_at"`
+	// The date when this volume was last updated
+	UpdatedAt Time `json:"updated_at"`
+	// Instances onto which the volume is attached.
+	Attachments []volumes.Attachment `json:"attachments"`
+	// Human-readable display name for the volume.
+	Name string `json:"name"`
+	// Human-readable description for the volume.
+	Description string `json:"description"`
+	// The type of volume to create, either SATA or SSD.
+	VolumeType string `json:"volume_type"`
+	// The ID of the snapshot from which the volume was created
+	SnapshotID string `json:"snapshot_id"`
+	// The ID of another block storage volume from which the current volume was created
+	SourceVolID string `json:"source_volid"`
+	// The backup ID, from which the volume was restored
+	// This field is supported since 3.47 microversion
+	BackupID *string `json:"backup_id"`
+	// The group ID; this field is supported since 3.47 microversion
+	GroupID *string `json:"group_id"`
+	// Arbitrary key-value pairs defined by the user.
+	Metadata map[string]string `json:"metadata"`
+	// UserID is the id of the user who created the volume.
+	UserID string `json:"user_id"`
+	// Indicates whether this is a bootable volume.
+	Bootable string `json:"bootable"`
+	// Encrypted denotes if the volume is encrypted.
+	Encrypted bool `json:"encrypted"`
+	// ReplicationStatus is the status of replication.
+	ReplicationStatus string `json:"replication_status"`
+	// ConsistencyGroupID is the consistency group ID.
+	ConsistencyGroupID string `json:"consistencygroup_id"`
+	// Multiattach denotes if the volume is multi-attach capable.
+	Multiattach bool `json:"multiattach"`
+	// Image metadata entries, only included for volumes that were created from an image, or from a snapshot of a volume originally created from an image.
+	VolumeImageMetadata map[string]string `json:"volume_image_metadata"`
+	// The volume migration status
+	MigrationStatus string `json:"migration_status"`
+
 	OsVolHostAttrHost         string `json:"os-vol-host-attr:host"`
 	OsVolMigStatusAttrMigstat string `json:"os-vol-mig-status-attr:migstat"`
 	OsVolMigStatusAttrNameID  string `json:"os-vol-mig-status-attr:name_id"`
 	OsVolTenantAttrTenantID   string `json:"os-vol-tenant-attr:tenant_id"`
 	ProviderID                string `json:"provider_id"`
-	ReplicationStatus         string `json:"replication_status"`
 	ServiceUUID               string `json:"service_uuid"`
 	SharedTargets             bool   `json:"shared_targets"`
-	Size                      int    `json:"size"`
-	SnapshotID                string `json:"snapshot_id"`
-	SourceVolID               string `json:"source_volid"`
-	Status                    string `json:"status"`
-	UpdatedAt                 Time   `json:"updated_at"`
-	UserID                    string `json:"user_id"`
-	VolumeType                string `json:"volume_type"`
 }
