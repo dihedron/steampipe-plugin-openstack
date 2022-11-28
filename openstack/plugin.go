@@ -18,7 +18,7 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 			"openstack_port":       tableOpenStackPort(ctx),
 			"openstack_volume":     tableOpenStackVolume(ctx),
 			"openstack_attachment": tableOpenStackAttachment(ctx),
-			// "openstack_attachment":        tableOpenStackAttachment(ctx),
+			"openstack_image":      tableOpenStackImage(ctx),
 			// "openstack_securitygroup":     tableOpenStackSecurityGroup(ctx),
 			// "openstack_securitygrouprule": tableOpenStackSecurityGroupRule(ctx),
 		},

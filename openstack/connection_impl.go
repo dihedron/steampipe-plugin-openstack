@@ -15,6 +15,7 @@ const (
 	DefaultComputeV2Microversion      = "2.79"
 	DefaultIdentityV3Microversion     = "3.13"
 	DefaultBlockStorageV3Microversion = "3.59"
+	DefaultImageServiceV2Microversion = "2.9"
 )
 
 type ServiceType string
@@ -31,6 +32,8 @@ const (
 	NetworkV2 = "openstack_network_v2"
 	// BlockStorageV3 identifies the OpenStack Block Storage V3 service (Cinder).
 	BlockStorageV3 = "openstack_blockstorage_v3"
+	// ImageServiceV2 identifies the OpenStack Image Service V2 service (Glance).
+	ImageServiceV2 = "openstack_imageservice_v2"
 )
 
 type serviceConfig struct {
@@ -72,6 +75,16 @@ var serviceConfigMap = map[ServiceType]serviceConfig{
 			microversion := DefaultBlockStorageV3Microversion
 			if config.BlockStorageV3Microversion != nil {
 				microversion = *config.BlockStorageV3Microversion
+			}
+			return microversion
+		},
+	},
+	ImageServiceV2: {
+		newClient: openstack.NewImageServiceV2,
+		getMicroversion: func(config *openstackConfig) string {
+			microversion := DefaultImageServiceV2Microversion
+			if config.ImageServiceV2Microversion != nil {
+				microversion = *config.ImageServiceV2Microversion
 			}
 			return microversion
 		},

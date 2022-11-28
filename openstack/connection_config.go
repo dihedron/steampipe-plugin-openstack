@@ -24,6 +24,7 @@ type openstackConfig struct {
 	ComputeV2Microversion      *string `cty:"compute_v2_microversion"`
 	NetworkV2Microversion      *string `cty:"network_v2_microversion"`
 	BlockStorageV3Microversion *string `cty:"blockstorage_v3_microversion"`
+	ImageServiceV2Microversion *string `cty:"imageservice_v2_microversion"`
 	// TODO: check
 	// AppCredentialName          *string `cty:"app_credential_name"`
 }
@@ -72,6 +73,21 @@ var ConfigSchema = map[string]*schema.Attribute{
 		Type: schema.TypeBool,
 	},
 	"trace_level": {
+		Type: schema.TypeString,
+	},
+	"identity_v3_microversion": {
+		Type: schema.TypeString,
+	},
+	"compute_v2_microversion": {
+		Type: schema.TypeString,
+	},
+	"network_v2_microversion": {
+		Type: schema.TypeString,
+	},
+	"blockstorage_v3_microversion": {
+		Type: schema.TypeString,
+	},
+	"imageservice_v2_microversion": {
 		Type: schema.TypeString,
 	},
 }
