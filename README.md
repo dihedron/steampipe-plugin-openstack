@@ -66,6 +66,12 @@ This plugin is still in the very early stages.
             - [X] Filter
         - [ ] *TODO*
             - [ ] Manage tags
+    - [X] Network security groups
+        - [X] Get
+        - [X] List
+            - [X] Filter
+        - [ ] *TODO*
+            - [ ] Manage tags
     - [X] Projects
         - [X] Get
         - [X] List
