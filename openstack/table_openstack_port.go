@@ -99,8 +99,7 @@ func tableOpenStackPort(_ context.Context) *plugin.Table {
 				Name:        "security_group_ids",
 				Type:        proto.ColumnType_STRING,
 				Description: "The IDs of the security groups that apply to the current port.",
-				// 	Hydrate:     getEc2InstanceARN,
-				Transform: transform.FromField("SecurityGroups").Transform(transform.EnsureStringArray),
+				Transform:   transform.FromField("SecurityGroups").Transform(transform.EnsureStringArray),
 			},
 		},
 		List: &plugin.ListConfig{

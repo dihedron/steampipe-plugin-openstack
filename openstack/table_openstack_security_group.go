@@ -5,6 +5,7 @@ import (
 
 	"github.com/dihedron/steampipe-plugin-utils/utils"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
@@ -14,7 +15,7 @@ import (
 
 func tableOpenStackSecurityGroup(ctx context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "openstack_securitygroup",
+		Name:        "openstack_security_group",
 		Description: "OpenStack Security Group",
 		Columns: []*plugin.Column{
 			{
@@ -58,6 +59,18 @@ func tableOpenStackSecurityGroup(ctx context.Context) *plugin.Table {
 				Type:        proto.ColumnType_JSON,
 				Description: "Tags is a list of security group tags. Tags are arbitrarily defined strings attached to a security group.",
 				Transform:   transform.FromField("Tags"),
+			},
+			{
+				Name:        "security_group_rule_ids",
+				Type:        proto.ColumnType_JSON,
+				Description: "The id of the security group rules that belong to the current security group.",
+				Transform:   transform.FromField("Rules").Transform(extractSecGroupRuleIDs), //.Transform(transform.EnsureStringArray)
+			},
+			{
+				Name:        "security_group_rules",
+				Type:        proto.ColumnType_JSON,
+				Description: "The security group rules that belong to the current security group.",
+				Transform:   transform.FromField("Rules"), //.Transform(transform.EnsureStringArray),
 			},
 		},
 		List: &plugin.ListConfig{
@@ -158,4 +171,16 @@ func buildOpenStackSecurityGroupFilter(ctx context.Context, quals plugin.KeyColu
 	// TODO: handle tags
 	plugin.Logger(ctx).Debug("returning", "filter", utils.ToPrettyJSON(opts))
 	return opts
+}
+
+func extractSecGroupRuleIDs(_ context.Context, d *transform.TransformData) (interface{}, error) {
+	var values []string
+	if d.Value != nil {
+		if list, ok := d.Value.([]rules.SecGroupRule); ok {
+			for _, sgr := range list {
+				values = append(values, sgr.ID)
+			}
+		}
+	}
+	return values, nil
 }
