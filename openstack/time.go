@@ -72,6 +72,9 @@ func (t *Time) IsZero() bool {
 
 func ToTime(ctx context.Context, d *transform.TransformData) (any, error) {
 	var err error
+	if d.Value == nil {
+		return nil, nil
+	}
 	switch t := d.Value.(type) {
 	case *Time:
 		if t == nil || t.IsZero() {
