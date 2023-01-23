@@ -106,6 +106,52 @@ func tableOpenStackSecurityGroupRule(ctx context.Context) *plugin.Table {
 		},
 		List: &plugin.ListConfig{
 			Hydrate: listOpenStackSecurityGroupRule,
+			KeyColumns: plugin.KeyColumnSlice{
+				&plugin.KeyColumn{
+					Name:    "id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "description",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "remote_group_id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "direction",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "protocol",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "ethertype",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "port_range_min",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "port_range_max",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "security_group_id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "project_id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "remote_ip_prefix",
+					Require: plugin.Optional,
+				},
+			},
 		},
 		Get: &plugin.GetConfig{
 			KeyColumns: plugin.SingleColumn("id"),
@@ -148,7 +194,6 @@ func listOpenStackSecurityGroupRule(ctx context.Context, d *plugin.QueryData, h 
 			break
 		}
 		rule := rule
-
 		d.StreamListItem(ctx, &rule)
 	}
 	return nil, nil
@@ -242,7 +287,6 @@ func buildOpenStackSecurityGroupRuleFilter(ctx context.Context, quals plugin.Key
 		opts.RemoteIPPrefix = value.GetStringValue()
 	}
 
-	// TODO: handle tags
 	plugin.Logger(ctx).Debug("returning", "filter", utils.ToPrettyJSON(opts))
 	return opts
 }

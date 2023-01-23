@@ -75,6 +75,24 @@ func tableOpenStackSecurityGroup(ctx context.Context) *plugin.Table {
 		},
 		List: &plugin.ListConfig{
 			Hydrate: listOpenStackSecurityGroup,
+			KeyColumns: plugin.KeyColumnSlice{
+				&plugin.KeyColumn{
+					Name:    "id",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "name",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "description",
+					Require: plugin.Optional,
+				},
+				&plugin.KeyColumn{
+					Name:    "project_id",
+					Require: plugin.Optional,
+				},
+			},
 		},
 		Get: &plugin.GetConfig{
 			KeyColumns: plugin.SingleColumn("id"),
