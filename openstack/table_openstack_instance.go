@@ -78,6 +78,33 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("HostID"),
 			},
 			{
+				Name:        "addresses",
+				Type:        proto.ColumnType_JSON,
+				Description: "The IP address of the Instance",
+				Transform: transform.FromField("Addresses").Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
+					var results []map[string]string
+					if value, ok := d.Value.(map[string][]struct {
+						MACAddress string `json:"OS-EXT-IPS-MAC:mac_addr"`
+						IPType     string `json:"OS-EXT-IPS:type"`
+						IPAddress  string `json:"addr"`
+						IPVersion  int    `json:"version"`
+					}); ok {
+						results = make([]map[string]string, 0, len(value)*2)
+						for k, v := range value {
+							ip := make(map[string]string, len(v))
+							for _, a := range v {
+								ip["Network"] = k
+								ip["IPAddress"] = a.IPAddress
+								ip["MACAddress"] = a.MACAddress
+								results = append(results, ip)
+							}
+						}
+						return results, nil
+					}
+					return results, nil
+				}),
+			},
+			{
 				Name:        "host_name",
 				Type:        proto.ColumnType_STRING,
 				Description: "The name of the host the instance is running on",
@@ -253,7 +280,7 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Name:        "flavor_rng_allowed",
 				Type:        proto.ColumnType_BOOL,
 				Description: "Whether the RNG is allowed on the flavor used to start the instance.",
-				Transform:   transform.FromField("Flavor.ExtraSpecs.RNGAllowed"),
+				Transform:   transform.FromField("Flavor.ExtraSpecs.RNGAllowed").Transform(transform.NullIfZeroValue).Transform(transform.ToBool),
 			},
 			{
 				Name:        "flavor_watchdog_action",
