@@ -81,28 +81,7 @@ func tableOpenStackInstance(_ context.Context) *plugin.Table {
 				Name:        "addresses",
 				Type:        proto.ColumnType_JSON,
 				Description: "The IP address of the Instance",
-				Transform: transform.FromField("Addresses").Transform(func(ctx context.Context, d *transform.TransformData) (any, error) {
-					var results []map[string]string
-					if value, ok := d.Value.(map[string][]struct {
-						MACAddress string `json:"OS-EXT-IPS-MAC:mac_addr"`
-						IPType     string `json:"OS-EXT-IPS:type"`
-						IPAddress  string `json:"addr"`
-						IPVersion  int    `json:"version"`
-					}); ok {
-						results = make([]map[string]string, 0, len(value)*2)
-						for k, v := range value {
-							ip := make(map[string]string, len(v))
-							for _, a := range v {
-								ip["Network"] = k
-								ip["IPAddress"] = a.IPAddress
-								ip["MACAddress"] = a.MACAddress
-								results = append(results, ip)
-							}
-						}
-						return results, nil
-					}
-					return results, nil
-				}),
+				Transform:   transform.FromField("Addresses").Transform(getVmIpAddresses),
 			},
 			{
 				Name:        "host_name",
@@ -555,4 +534,30 @@ type apiInstance struct {
 	ConfigDrive        string    `json:"config_drive"`
 	Description        string    `json:"description"`
 	//	TaskState          interface{}              `json:"OS-EXT-STS:task_state"`
+}
+
+//// UTILITY FUNCTIONS
+
+// Get Instance IP addresses
+func getVmIpAddresses(ctx context.Context, d *transform.TransformData) (any, error) {
+	var results []map[string]string
+	if value, ok := d.Value.(map[string][]struct {
+		MACAddress string `json:"OS-EXT-IPS-MAC:mac_addr"`
+		IPType     string `json:"OS-EXT-IPS:type"`
+		IPAddress  string `json:"addr"`
+		IPVersion  int    `json:"version"`
+	}); ok {
+		results = make([]map[string]string, 0, len(value))
+		for k, v := range value {
+			ip := make(map[string]string, len(v))
+			for _, a := range v {
+				ip["Network"] = k
+				ip["IPAddress"] = a.IPAddress
+				ip["MACAddress"] = a.MACAddress
+				results = append(results, ip)
+			}
+		}
+		return results, nil
+	}
+	return results, nil
 }
